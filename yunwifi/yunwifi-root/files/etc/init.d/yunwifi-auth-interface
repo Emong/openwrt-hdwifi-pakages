@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+START=15
+start(){
+    /usr/sbin/set_auth_interface.sh
+}
+stop() {
+    logger "stop"
+}

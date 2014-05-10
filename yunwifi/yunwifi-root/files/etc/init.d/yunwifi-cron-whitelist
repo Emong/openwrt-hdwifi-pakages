@@ -1,5 +1,6 @@
-#!/bin/sh
-enable(){
+#!/bin/sh /etc/rc.common
+START=99
+start(){
     if [ ! -f /etc/crontabs/root ]; then
         echo "*/5 * * * * /usr/sbin/whitelist.sh update" >/etc/crontabs/root
     else
@@ -11,8 +12,7 @@ enable(){
 	fi
     /etc/init.d/cron reload
 }
-disable() {
+stop() {
 	sed -i  '/whitelist.sh/'d /etc/crontabs/root
     /etc/init.d/cron reload
 }
-eval $1

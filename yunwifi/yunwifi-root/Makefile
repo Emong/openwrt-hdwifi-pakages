@@ -18,7 +18,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/yunwifi-root
   SECTION:=utils
   CATEGORY:=Base system
-  DEPENDS:=
+  DEPENDS:=+base-files
   TITLE:=Yunwifi root
   PKGARCH:=all
 endef
@@ -42,18 +42,6 @@ endef
 define Package/yunwifi-root/install
 	$(INSTALL_DIR) $(1)
 	$(CP) ./files/* $(1)/
-endef
-define Package/yunwifi-root/postinst
-#!/bin/sh
-sed -i 's|exit 0|/etc/init.d/yunwifi-cron-autoup enable\nexit 0|g' /etc/rc.local
-sed -i 's|exit 0|/etc/init.d/yunwifi-cron-whitelist enable\nexit 0|g' /etc/rc.local
-sed -i 's|exit 0|whitelist.sh do_table\nexit 0|g' /etc/rc.local
-endef
-define Package/yunwifi-root/prerm
-#!/bin/sh
-sed -i '/yunwifi-cron-autoup/'d /etc/rc.local
-sed -i '/yunwifi-cron-whitelist/'d /etc/rc.local
-sed -i '/whitelist.sh/'d /etc/rc.local
 endef
 
 $(eval $(call BuildPackage,yunwifi-root))
