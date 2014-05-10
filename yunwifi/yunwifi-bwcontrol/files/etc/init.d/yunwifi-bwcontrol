@@ -1,0 +1,10 @@
+#!/bin/sh
+disable(){
+	if [ -z "$(cat /etc/hotplug.d/iface/99-yunwifi-bw |grep exit)" ]; then
+		sed -i '1iexit 0' /etc/hotplug.d/iface/99-yunwifi-bw
+	fi
+}
+enable() {
+	sed -i  '/exit 0/'d /etc/hotplug.d/iface/99-yunwifi-bw
+}
+eval $1

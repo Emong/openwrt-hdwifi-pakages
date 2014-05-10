@@ -1,0 +1,9 @@
+
+config 'service'
+	option 'provider' '3322'
+	option 'user' '123'
+	option 'pwd' '456'
+	option 'domain' 'abcdef'
+	option 'device' 'swust'
+	option 'retry' '3'
+

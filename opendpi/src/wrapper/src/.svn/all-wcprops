@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/211/backfire/package/opendpi/src/wrapper/src
+END
+xt_opendpi.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/194/backfire/package/opendpi/src/wrapper/src/xt_opendpi.h
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/194/backfire/package/opendpi/src/wrapper/src/main.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/211/backfire/package/opendpi/src/wrapper/src/Makefile
+END

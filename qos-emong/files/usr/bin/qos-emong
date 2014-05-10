@@ -1,0 +1,257 @@
+#!/bin/sh
+. /etc/functions.sh
+. /lib/functions/network.sh
+load_var() {
+	network_get_device LAN_IF $1
+	network_get_device WAN_IF $2
+}
+
+load_modules(){
+[ ! -f /tmp/qos-emong-modules ] && {
+	insmod cls_fw 
+	insmod sch_hfsc 
+	insmod sch_sfq 
+	insmod sch_red 
+	insmod sch_htb 
+	insmod sch_prio 
+	insmod ipt_multiport 
+#	insmod ipt_CONNMARK
+	insmod ipt_length 
+	insmod xt_connlimit
+	insmod xt_connbytes
+	insmod ipt_connbytes
+	insmod cls_u32
+	insmod em_u32
+	insmod act_connmark
+	insmod sch_ingress
+	insmod act_mirred
+	echo >/tmp/qos-emong-modules
+	}
+}
+stop_tc() {
+	tc qdisc del dev $WAN_IF root 2>/dev/null
+	tc qdisc del dev $LAN_IF root 2>/dev/null
+}
+stop_table() {
+	iptables -t filter -D FORWARD -i $WAN_IF -o $LAN_IF -j emlmt 2>/dev/null
+	iptables -t filter -F emlmt 2>/dev/null
+	iptables -t filter -X emlmt 2>/dev/null
+
+	iptables -t mangle -D FORWARD -i $WAN_IF -o $LAN_IF -j DOWN 2>/dev/null
+	iptables -t mangle -D FORWARD -i $LAN_IF -o $WAN_IF -j UP 2>/dev/null
+	iptables -t mangle -D FORWARD -m opendpi --icmp -j RETURN 2>/dev/null
+		
+	iptables -t mangle -F UP 2>/dev/null
+	iptables -t mangle -F DOWN 2>/dev/null
+	iptables -t mangle -F IP_DOWN 2>/dev/null
+	iptables -t mangle -F IP_UP 2>/dev/null
+	iptables -t mangle -X UP 2>/dev/null
+	iptables -t mangle -X DOWN 2>/dev/null
+	iptables -t mangle -X IP_DOWN 2>/dev/null
+	iptables -t mangle -X IP_UP 2>/dev/null
+
+	iptables -t mangle -D FORWARD -m opendpi --thunder --pptv --funshion --qqlive --pplive --ppstream -j DROP
+}
+qos_stop() {
+	stop_tc
+	stop_table
+}
+
+start_tc() {
+	tc qdisc add dev $WAN_IF root handle 1: htb
+	tc qdisc add dev $LAN_IF root handle 1: htb
+	
+	tc class add dev $WAN_IF parent 1: classid 1:2 htb rate $((UP))kbit ceil $((UP))kbit
+	tc class add dev $LAN_IF parent 1: classid 1:2 htb rate $((DOWN))kbit ceil $((DOWN))kbit	#单ip限速
+	
+	echo "ip qdisc end"
+	
+	tc class add dev $WAN_IF parent 1: classid 1:1 htb rate $((UP*95/100))kbit	#根类
+	tc class add dev $WAN_IF parent 1:1 classid 1:11 htb rate $((UP*5/10))kbit prio 1	#高速底时延应用
+	tc class add dev $WAN_IF parent 1:1 classid 1:12 htb rate $((UP*5/10))kbit ceil $((UP*9/10))kbit prio 2	#普通应用根
+	tc class add dev $WAN_IF parent 1:12 classid 1:121 htb rate $((UP*5/10))kbit ceil $((UP*8/10))kbit prio 1	#www-ftp
+	tc class add dev $WAN_IF parent 1:12 classid 1:122 htb rate $((UP*5/100))kbit ceil $((UP*2/10))kbit prio 10	#p2p应用
+	tc class add dev $WAN_IF parent 1:12 classid 1:123 htb rate $((UP*4/10))kbit ceil $((UP*6/10))kbit prio 3	#默认等级
+	tc qdisc add dev $WAN_IF parent 1:11 handle 11: sfq perturb 10
+	tc qdisc add dev $WAN_IF parent 1:121 handle 121: sfq perturb 10
+	tc qdisc add dev $WAN_IF parent 1:122 handle 122: sfq perturb 10
+	tc qdisc add dev $WAN_IF parent 1:123 handle 123: sfq perturb 10
+	tc filter add dev $WAN_IF parent 1: handle 0x10/0xfff0 fw classid 1:11
+	tc filter add dev $WAN_IF parent 1: handle 0x20/0xfff0 fw classid 1:121
+	tc filter add dev $WAN_IF parent 1: handle 0x30/0xfff0 fw classid 1:122
+	tc filter add dev $WAN_IF parent 1: handle 0x40/0xfff0 fw classid 1:123
+	
+	
+	tc class add dev $LAN_IF parent 1: classid 1:1 htb rate $((DOWN*95/100))kbit	#根类
+	tc class add dev $LAN_IF parent 1:1 classid 1:11 htb rate $((DOWN*5/10))kbit prio 1	#高速底时延应用
+	tc class add dev $LAN_IF parent 1:1 classid 1:12 htb rate $((DOWN*5/10))kbit ceil $((DOWN*9/10))kbit prio 2	#普通应用根
+	tc class add dev $LAN_IF parent 1:12 classid 1:121 htb rate $((DOWN*4/10))kbit ceil $((DOWN*8/10))kbit prio 1	#www-ftp
+	tc class add dev $LAN_IF parent 1:12 classid 1:122 htb rate $((DOWN*1/10))kbit ceil $((DOWN*5/10))kbit prio 10	#p2p应用
+	tc class add dev $LAN_IF parent 1:12 classid 1:123 htb rate $((DOWN*4/10))kbit ceil $((DOWN*7/10))kbit prio 3	#默认等级
+	tc qdisc add dev $LAN_IF parent 1:11 handle 11: sfq perturb 10
+	tc qdisc add dev $LAN_IF parent 1:121 handle 121: sfq perturb 10
+	tc qdisc add dev $LAN_IF parent 1:122 handle 122: sfq perturb 10
+	tc qdisc add dev $LAN_IF parent 1:123 handle 123: sfq perturb 10
+	tc filter add dev $LAN_IF parent 1: handle 0x10/0xfff0 fw classid 1:11
+	tc filter add dev $LAN_IF parent 1: handle 0x20/0xfff0 fw classid 1:121
+	tc filter add dev $LAN_IF parent 1: handle 0x30/0xfff0 fw classid 1:122
+	tc filter add dev $LAN_IF parent 1: handle 0x40/0xfff0 fw classid 1:123
+}
+start_table() {
+	iptables -t filter -N emlmt
+	iptables -t filter -I FORWARD -i $WAN_IF  -o $LAN_IF -j emlmt
+	
+	iptables -t mangle -N UP
+	iptables -t mangle -N DOWN
+	iptables -t mangle -N IP_UP
+	iptables -t mangle -N IP_DOWN
+	iptables -t mangle -I FORWARD -i $LAN_IF  -o $WAN_IF -j UP
+	iptables -t mangle -I FORWARD -i $WAN_IF  -o $LAN_IF -j DOWN
+	iptables -t mangle -I FORWARD -m opendpi --icmp -j RETURN
+	
+	iptables -t mangle -I DOWN -m opendpi --ssh --telnet --dns -j RETURN
+	iptables -t mangle -A DOWN -j MARK --set-mark=0x41	
+	iptables -t mangle -A DOWN -m opendpi --gnutella --edonkey --bittorrent -j MARK --set-mark=0x31
+	iptables -t mangle -A DOWN -m opendpi --http --ftp --ssl --rdp -j MARK --set-mark=0x21
+	iptables -t mangle -A DOWN -m opendpi --hf --pt11 -j MARK --set-mark=0x11
+	iptables -t mangle -A DOWN -m opendpi --warcraft3 --qq --aliwangwang --worldofwarcraft -j MARK --set-mark=0x11
+	iptables -t mangle -A DOWN -m mark --mark 0x41 -m length --length :512 -j MARK --set-mark=0x11
+	iptables -t mangle -A DOWN -m mark --mark 0x41 -m length --length 1024:1536 -j MARK --set-mark=0x31
+	iptables -t mangle -A DOWN -j IP_DOWN
+	
+	
+	iptables -t mangle -I UP -m opendpi --ssh --telnet --dns -j RETURN
+	iptables -t mangle -A UP -j MARK --set-mark=0x41	
+	iptables -t mangle -A UP -m opendpi --gnutella --edonkey --bittorrent -j MARK --set-mark=0x31
+	iptables -t mangle -A UP -m opendpi --http --ftp --ssl --rdp -j MARK --set-mark=0x21
+	iptables -t mangle -A UP -m opendpi --hf --pt11 -j MARK --set-mark=0x11
+	iptables -t mangle -A UP -m opendpi --warcraft3 --qq --aliwangwang --worldofwarcraft -j MARK --set-mark=0x11
+	iptables -t mangle -A UP -m mark --mark 0x41 -m length --length :512 -j MARK --set-mark=0x11
+	iptables -t mangle -A UP -m mark --mark 0x41 -m length --length 1024:1536 -j MARK --set-mark=0x31
+	iptables -t mangle -A UP -j IP_UP
+
+	iptables -t mangle -I FORWARD -m opendpi --thunder --pptv --funshion --qqlive --pplive --ppstream -j DROP
+}
+qos_start(){
+	echo $WAN_IF
+	echo $LAN_IF
+	echo $UP
+	echo $DOWN
+	start_tc
+	start_table
+}
+
+ip_limit() {
+	#$1 ip, $2 ÏÂÔØ×îŽó, $3 ÏÂÔØ±£Ö€, $4 ÉÏÔØ×îŽó, $5 ÉÏÔØ±£Ö€
+	#
+	#
+	
+	echo $1 
+	echo $2
+	echo $3
+	echo $4
+	echo $5
+	ips=1
+	[ -z $(echo "$1" |grep "-" ) ] && ips=0
+	[ $ips = 1 ] && ip=$(echo $1 |awk -F '.' '{print $7}')
+	[ $ips = 0 ] && ip=$(echo $1 |awk -F '.' '{print $4}')
+	[ -n $(echo "$ip" |grep "/" ) ] && ip=$(echo $ip |awk -F '/' '{print $1}')                                                                                      
+	echo $ip   
+	[ ${#ip} -lt 3 ] && ip=0$ip
+	[ ${#ip} -lt 3 ] && ip=0$ip
+	[ $ips = 1 ] && var=2
+	[ $ips = 0 ] && var=1
+
+	tc class add dev $WAN_IF parent 1:2 classid 1:$var$ip htb rate $5kbit ceil $4kbit
+	tc qdisc add dev $WAN_IF parent 1:$var$ip handle $var$ip sfq perturb 10
+	tc filter add dev $WAN_IF parent 1: handle 0x$var$ip fw flowid 1:$var$ip
+
+	tc class add dev $LAN_IF parent 1:2 classid 1:$var$ip htb rate $3kbit ceil $2kbit
+	tc qdisc add dev $LAN_IF parent 1:$var$ip handle $var$ip sfq perturb 10
+	tc filter add dev $LAN_IF parent 1: handle 0x$var$ip fw flowid 1:$var$ip
+
+	[ "$6" = "" ] && {
+		iptables -t mangle -A IP_DOWN -d $1 -j MARK --set-mark 0x$var$ip
+		iptables -t mangle -A IP_UP -s $1 -j MARK --set-mark 0x$var$ip
+	}
+
+}
+
+connlmt() {
+# $1 ip,$2 tcp $3 udp
+echo $1
+echo $2
+echo $3
+
+	[ "$2" != "0" ] && iptables -t filter -I emlmt -p tcp -d $1 -m connlimit --connlimit-above $2 --connlimit-mask 0  -j REJECT
+	[ "$3" != "0" ] && iptables -t filter -I emlmt -p udp -d $1 -m connlimit --connlimit-above $3 --connlimit-mask 0  -j REJECT
+
+}
+
+port_first() {
+echo $1
+echo $2
+iptables -t mangle -I DOWN -p $1 -m multiport --source-port $2 -j RETURN
+
+}
+
+emong_config_get() {
+	config_get emong_enable main enable
+	config_get UP main up
+	config_get DOWN main down
+	config_get wan main wan
+	config_get lan main lan
+}
+
+ip_config_get() {
+	config_get ip $1 ip
+	config_get enable $1 enable
+	config_get upc $1 upc
+	config_get upr $1 upr
+	config_get downc $1 downc
+	config_get downr $1 downr
+	[ "$enable" == "1" ] && ip_limit $ip $downc $downr $upc $upr $2
+}
+
+connlmt_config_get() {
+	config_get ip $1 ip
+	config_get enable $1 enable
+	config_get udp $1 udp
+	config_get tcp $1 tcp
+	[ "$enable" == "1" ] && connlmt $ip $tcp $udp
+}
+
+port_config_get() {
+	config_get proto $1 proto
+	config_get enable $1 enable
+	config_get port $1 port
+	[ "$enable" == "1" ] && port_first $proto $port
+}
+
+config_load qos-emong
+emong_config_get
+load_modules
+case $1 in
+	start) 
+		[ "$emong_enable" = "1" ] && {
+			load_var $lan $wan
+			qos_stop
+			qos_start
+			config_foreach ip_config_get ip-limit
+			config_foreach connlmt_config_get connlmt
+#			iptables -t filter -I emlmt -p udp -m multiport --dports 8000,53,1512,1610 -j RETURN
+#			iptables -t filter -I emlmt -p tcp -m multiport --dports 80 -j RETURN
+			config_foreach port_config_get port_first
+		}
+	;;
+	stop)
+		load_var $lan $wan
+		qos_stop
+	;;
+	refresh_interface)
+		load_var $lan $wan
+		stop_tc
+		start_tc
+		config_foreach ip_config_get ip-limit refresh
+	;;
+esac

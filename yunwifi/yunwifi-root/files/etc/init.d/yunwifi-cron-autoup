@@ -1,0 +1,18 @@
+#!/bin/sh
+enable(){
+    if [ ! -f /etc/crontabs/root ]; then
+        echo "0 2 * * * /usr/sbin/autoupgrade.sh" >/etc/crontabs/root
+    else
+		if [  ! "$(cat /etc/crontabs/root |wc -l)" = "0" -a  -z "$(cat /etc/crontabs/root |grep autoupgrade)" ]; then
+			sed -i '1i0 2 * * * /usr/sbin/autoupgrade.sh' /etc/crontabs/root
+		else
+			echo "0 2 * * * /usr/sbin/autoupgrade.sh" >/etc/crontabs/root
+		fi
+	fi
+    /etc/init.d/cron reload
+}
+disable() {
+	sed -i  '/autoupgrade.sh/'d /etc/crontabs/root
+    /etc/init.d/cron reload
+}
+eval $1

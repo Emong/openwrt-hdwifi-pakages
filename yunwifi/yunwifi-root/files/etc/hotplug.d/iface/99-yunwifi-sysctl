@@ -1,0 +1,7 @@
+[ "$INTERFACE" = "lan" ] && {
+	iso=$(uci get wireless.@wifi-iface[0].isolate)
+	if [ "$iso" = "1" ]; then
+		sysctl -w net.ipv4.conf.$DEVICE.proxy_arp_pvlan=1
+	fi
+}
+

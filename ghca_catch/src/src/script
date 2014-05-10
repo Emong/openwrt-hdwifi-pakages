@@ -1,0 +1,6 @@
+#!/bin/sh
+[ "$(ifconfig |grep wan)" = "" ] && {
+    echo "$1" >/tmp/gusr
+    echo "$2" >/tmp/gpwd
+    ifup wan
+}

@@ -1,0 +1,5 @@
+[ "$INTERFACE" = "lan" ] && {
+	logger "lan up"
+
+	/usr/sbin/redirectifb.sh $DEVICE
+}

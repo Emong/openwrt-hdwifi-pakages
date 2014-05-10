@@ -1,0 +1,8 @@
+[ "$INTERFACE" = "wan" ] && {
+        local host=$(uci get yunwifi.config.hostname)
+        [ "$host" = "" ] && host=192.168.1.66
+        /usr/sbin/get_wifidog_conf.sh $host
+        ipset -N WHITE nethash --hashsize 5000 --probes 2
+        /usr/sbin/whitelist.sh update
+}
+

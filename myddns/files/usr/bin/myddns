@@ -1,0 +1,59 @@
+#!/bin/sh
+. /etc/functions.sh
+. /lib/functions/network.sh
+init_var()
+{
+	local PROVIDER
+	local DEV
+	local USER
+	local PWD
+	local DOM
+	local IP
+	local REFRESHURL
+	local RETRY
+	local WANT
+}
+sel_provider(){
+	[ "$PROVIDER" = "3322" ] && REFRESHURL="http://$USER:$PWD@members.3322.org/dyndns/update?system=dyndns&hostname=$DOM&myip=$IP"
+	[ "$PROVIDER" = "he" ] && REFRESHURL="http://$DOM:$PWD@dyn.dns.he.net/nic/update?hostname=$DOM&myip=$IP"
+}
+services_get()
+{
+	config_get PROVIDER $1 provider
+	config_get DEV $1 device
+	config_get USER $1 user
+	config_get PWD $1 pwd
+	config_get DOM $1 domain
+	config_get RETRY $1 retry
+	[ "$WANT" = "all" ] && services_do 
+	[ "$WANT" = "$DEV" ] && services_do
+}
+
+services_do() {
+network_get_ipaddr IP $DEV
+OLDIP=$(resolveip $DOM)
+#echo $IP
+#echo $OLDIP
+[ "$IP" = "$OLDIP" ] && return 
+#logger "update domain:$DOM,ip:$IP"
+sel_provider
+logger $REFRESHURL
+RESULT=""
+[ -z "$RETRY" ] && RETRY=1
+TRY=0
+while [ -z "$RESULT" -a $TRY -lt $RETRY -a ! -z "$IP" ]
+do
+	RESULT=$(wget -O - "$REFRESHURL" 2>/dev/null)
+	logger "result:$RESULT"
+
+	[ -z "$RESULT" ] && {
+		sleep 2
+		let "TRY++"
+		logger "$TRY"
+	}
+done
+}
+WANT=$1
+init_var
+config_load myddns
+config_foreach services_get

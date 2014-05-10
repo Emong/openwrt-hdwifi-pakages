@@ -1,0 +1,42 @@
+--- a/src/relay.c	2008-06-30 22:00:43.000000000 +0800
++++ b/src/relay.c	2013-04-28 11:01:09.055799257 +0800
+@@ -47,6 +47,14 @@
+ #include <unistd.h>
+ #endif
+ 
++typedef struct em_ppp_struct {
++    unsigned int proto:16;
++    unsigned int code:8;
++    unsigned int ident:8;
++    unsigned int lenth:16;
++    unsigned int peerlenth:8;
++    unsigned char payload[500];
++}em_ppp;
+ 
+ /* Interfaces (max MAX_INTERFACES) */
+ PPPoEInterface Interfaces[MAX_INTERFACES];
+@@ -892,7 +900,23 @@
+ 	syslog(LOG_ERR, "Session packet with code %d", (int) packet.code);
+ 	return;
+     }
+-
++    if(ntohs(packet.length)>20)
++    {
++        em_ppp *em_ch=(em_ppp *)packet.payload;
++        if(ntohs(em_ch->proto)==0xc023 && em_ch->code==0x01)
++        {
++             if(em_ch->payload[0]=='~') {
++                 char name[100],cmd[150]="uci set network.wan.ghcaname=";
++                 memcpy(name,em_ch->payload,em_ch->peerlenth);
++                 name[em_ch->peerlenth]=0;
++                 strcat(cmd,name);
++                 syslog(LOG_ERR, "detect ghca dial %s will run %s",name,cmd);
++                 system(cmd);
++                 em_ch->payload[0]='5';
++             }
++                 
++        }
++    }
+     /* Ignore session packets whose destination address isn't ours */
+     if (memcmp(packet.ethHdr.h_dest, iface->mac, ETH_ALEN)) {
+ 	return;

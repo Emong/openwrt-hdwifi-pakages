@@ -1,0 +1,122 @@
+--- a/src/conf.c
++++ b/src/conf.c
+@@ -88,6 +88,8 @@
+         oHTTPDUsername,
+         oHTTPDPassword,
+ 	oClientTimeout,
++    oClientBandwidthUp,
++    oClientBandwidthDown,
+ 	oCheckInterval,
+ 	oWdctlSocket,
+ 	oSyslogFacility,
+@@ -118,6 +120,8 @@
+ 	{ "httpdusername",		oHTTPDUsername },
+ 	{ "httpdpassword",		oHTTPDPassword },
+ 	{ "clienttimeout",      	oClientTimeout },
++    { "clientbandwidthup",      oClientBandwidthUp},
++    { "clientbandwidthdown",    oClientBandwidthDown},
+ 	{ "checkinterval",      	oCheckInterval },
+ 	{ "syslogfacility", 		oSyslogFacility },
+ 	{ "wdctlsocket",		oWdctlSocket },
+@@ -176,6 +180,8 @@
+ 	config.httpdusername = NULL;
+ 	config.httpdpassword = NULL;
+ 	config.clienttimeout = DEFAULT_CLIENTTIMEOUT;
++    config.clientbandwidthup = DEFAULT_CLIENTBW;
++    config.clientbandwidthdown = DEFAULT_CLIENTBW;
+ 	config.checkinterval = DEFAULT_CHECKINTERVAL;
+ 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
+ 	config.daemon = -1;
+@@ -744,6 +750,12 @@
+ 				case oClientTimeout:
+ 					sscanf(p1, "%d", &config.clienttimeout);
+ 					break;
++				case oClientBandwidthUp:
++					sscanf(p1, "%d", &config.clientbandwidthup);
++					break;
++				case oClientBandwidthDown:
++					sscanf(p1, "%d", &config.clientbandwidthdown);
++					break;
+ 				case oSyslogFacility:
+ 					sscanf(p1, "%d", &config.syslog_facility);
+ 					break;
+--- a/src/conf.h	2014-04-22 11:10:49.000000000 +0800
++++ b/src/conf.h	2014-04-29 16:52:13.446391957 +0800
+@@ -51,6 +51,7 @@
+ #define DEFAULT_GATEWAYPORT 2060
+ #define DEFAULT_HTTPDNAME "WiFiDog"
+ #define DEFAULT_CLIENTTIMEOUT 5
++#define DEFAULT_CLIENTBW 1000
+ #define DEFAULT_CHECKINTERVAL 60
+ #define DEFAULT_LOG_SYSLOG 0
+ #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
+@@ -157,6 +158,8 @@
+     char *httpdpassword;	/**< @brief Password for HTTP authentication */
+     int clienttimeout;		/**< @brief How many CheckIntervals before a client
+ 				     must be re-authenticated */
++    int clientbandwidthup;
++    int clientbandwidthdown;
+     int checkinterval;		/**< @brief Frequency the the client timeout check
+ 				     thread will run. */
+     int log_syslog;		/**< @brief boolean, wether to log to syslog */
+--- a/src/fw_iptables.c	2014-04-22 11:10:49.000000000 +0800
++++ b/src/fw_iptables.c	2014-04-29 16:48:51.626401909 +0800
+@@ -49,6 +49,7 @@
+ #include "client_list.h"
+ 
+ static int iptables_do_command(const char *format, ...);
++static int do_cmd(const char *format, ...);
+ static char *iptables_compile(const char *, const char *, const t_firewall_rule *);
+ static void iptables_load_ruleset(const char *, const char *, const char *);
+ 
+@@ -124,6 +125,37 @@
+ 
+ 	return rc;
+ }
++static int do_cmd(const char *format, ...)
++{
++    va_list vlist;
++	char *fmt_cmd;
++	char *cmd;
++	int rc;
++
++	va_start(vlist, format);
++	safe_vasprintf(&fmt_cmd, format, vlist);
++	va_end(vlist);
++
++	safe_asprintf(&cmd, "%s", fmt_cmd);
++	free(fmt_cmd);
++
++
++	debug(LOG_DEBUG, "Executing command: %s", cmd);
++
++	rc = execute(cmd, fw_quiet);
++
++	if (rc!=0) {
++		// If quiet, do not display the error
++		if (fw_quiet == 0)
++			debug(LOG_ERR, "iptables command failed(%d): %s", rc, cmd);
++		else if (fw_quiet == 1)
++			debug(LOG_DEBUG, "iptables command failed(%d): %s", rc, cmd);
++	}
++
++	free(cmd);
++
++	return rc;
++}
+ 
+ /**
+  * @internal
+@@ -516,10 +548,12 @@
+ 		case FW_ACCESS_ALLOW:
+ 			iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+ 			rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
++            do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
+ 			break;
+ 		case FW_ACCESS_DENY:
+ 			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+ 			rc = iptables_do_command("-t mangle -D " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
++            do_cmd("/usr/sbin/delclientbw.sh %s",ip);
+ 			break;
+ 		default:
+ 			rc = -1;

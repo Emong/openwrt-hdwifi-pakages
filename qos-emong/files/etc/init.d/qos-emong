@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+start(){
+echo "Qos Emong started"
+/usr/bin/qos-emong start
+}
+
+stop(){
+/usr/bin/qos-emong stop
+}
+restart(){
+echo "Qos Emong restarted"
+/usr/bin/qos-emong start
+}
+
+
+
