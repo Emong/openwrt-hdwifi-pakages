@@ -17,7 +17,7 @@ get_conf(){
         broad=$(ralink_board_name)
         uri="/yunwifi/wifi/getconf.action"
         host="http://${1}"
-        url="${host}${uri}?model=${broad}&mac=$(get_lan_mac)"
+        url="${host}${uri}?aptype=${broad}&mac=$(get_lan_mac)"
         wget -qO /tmp/wifidog.conf $url
         [ "$?" != "0" ] && {
             logger "YUNWIFI:wifidog remote config fail!"            

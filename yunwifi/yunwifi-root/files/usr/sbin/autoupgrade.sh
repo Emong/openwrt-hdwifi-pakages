@@ -26,7 +26,7 @@ check_up(){
         broad=$(ralink_board_name)
         uri="/yunwifi/wifi/getupdinfo.action"
         host="http://$(get_host_from_wifidog)"
-        url="${host}${uri}?model=${broad}&currentversion=${DISTRIB_VERSION}"
+        url="${host}${uri}?aptype=${broad}&currentversion=${DISTRIB_VERSION}"
 #       echo $url
         local JSON=$(wget -qO - $url)
         [ "$?" != "0" ] && {
