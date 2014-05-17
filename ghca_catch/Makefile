@@ -45,6 +45,10 @@ define Package/ghca_catch/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/pppoe-relay $(1)/usr/sbin/ghca-catch
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/pppoe-server $(1)/usr/sbin/ghca-server
+	$(INSTALL_DIR) $(1)/etc/ppp/plugins
+	$(CP) $(PKG_INSTALL_DIR)/etc/ppp/plugins/rp-pppoe.so $(1)/etc/ppp/plugins/rp-pppoe.so
+	$(CP) ./files/* $(1)
+
 endef
 
 $(eval $(call BuildPackage,ghca_catch))
