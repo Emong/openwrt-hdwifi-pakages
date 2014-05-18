@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 START=49
 start(){
-    if [ ! -f /etc/crontabs/root ]; then
+    if [ ! -f /etc/crontabs/root -o $(cat /etc/crontabs/root |wc -l) = "0" ]; then
         echo "*/5 * * * * /usr/sbin/whitelist.sh update" >/etc/crontabs/root
     else
 		if [ -z "$(cat /etc/crontabs/root |grep whitelist)" ]; then
