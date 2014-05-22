@@ -63,6 +63,7 @@ get_conf(){
                 echo "not give host!"
                 exit 1
         }
+		get_yunwifi_str
         uri="/yunwifi/wifi/getconf.action"
         host="http://${1}"
         url="${host}${uri}?aptype=${board}&yunwifistr=${yunwifi_str}"
@@ -83,6 +84,5 @@ get_conf(){
         [ "$?" != "0" ] && wifidog
 
         exit 0
-
 }
 get_conf $1
