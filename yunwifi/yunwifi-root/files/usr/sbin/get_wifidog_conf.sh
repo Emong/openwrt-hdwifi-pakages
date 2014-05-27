@@ -7,7 +7,7 @@ local domain=$1
 get_lan_mac() {
 
          [ "$(ralink_board_name)" = "mt7620a-evb" ] && local lan_mac=$(cat /sys/class/net/eth2/address)
-         echo $lan_mac | awk -F : '{print $1$2$3$4$5$6}'
+         echo $lan_mac
 }
 set_yunwifi_str() {
 	[ -e /tmp/lock/yunwifi_str.lck ] && {
@@ -15,7 +15,7 @@ set_yunwifi_str() {
 		return 1
 	}
 	touch /tmp/lock/yunwifi_str.lck
-	local url="http://${domain}/getyunwifistr.action"
+	local url="http://${domain}/yunwifi/wifi/getyunwifistr.action"
 	wget -qO /tmp/yunwifi_str.txt $url
 	while [ "$?" != "0" ]
 	do
@@ -23,8 +23,11 @@ set_yunwifi_str() {
 		wget -qO /tmp/yunwifi_str.txt $url
 	done
 	local str=$(cat /tmp/yunwifi_str.txt)
-	url="http://${domain}/confirmyunwifistr.action?${str}"
-	[ -f /lib/ralink.sh ] && {		
+	yunwifi_str=$(cat /tmp/yunwifi_str.txt)
+	local mac=$(get_lan_mac)
+	url="http://${domain}/yunwifi/wifi/confirmyunwifistr.action?gw_id=${str}&mac=${mac}&aptype="
+	[ -f /lib/ralink.sh ] && {
+		url=${url}$(ralink_board_name)
 		ralink_set_yunwifi_str $str
 		[ "$?" = "0" ] && {
 			wget -qO /dev/null $url
@@ -66,7 +69,7 @@ get_conf(){
 		get_yunwifi_str
         uri="/yunwifi/wifi/getconf.action"
         host="http://${1}"
-        url="${host}${uri}?aptype=${board}&yunwifistr=${yunwifi_str}"
+        url="${host}${uri}?aptype=${board}&gw_id=${yunwifi_str}"
         wget -qO /tmp/wifidog.conf $url
         [ "$?" != "0" ] && {
             logger "YUNWIFI:wifidog remote config fail!"            

@@ -7,7 +7,7 @@ wifi_auth_only() {
     uci set network.wln.ipaddr=192.168.254.1
     uci set network.wln.netmask=255.255.255.0
     uci set firewall.@zone[0].network='lan wln'
-    uci set network.lan.ifname=ra0
+    uci set network.lan.ifname=eth2.10
     uci set dhcp.wln=dhcp
     uci set dhcp.wln.interface=wln
     uci set dhcp.wln.leasetime=30m
