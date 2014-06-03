@@ -2,6 +2,7 @@
 START=99
 start(){
     whitelist.sh do_table
+	/usr/sbin/check_dog.sh &
 }
 stop() {   
     logger "whitelist stop"

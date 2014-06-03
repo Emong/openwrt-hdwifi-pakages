@@ -78,7 +78,8 @@ get_conf(){
         sed -i 's/\r//' /tmp/wifidog.conf
         newdog_md5=$(md5sum /tmp/wifidog.conf |awk '{print $1}')
         olddog_md5=$(md5sum /etc/wifidog.conf |awk '{print $1}')
-        [ "$newdog_md5" != "" -a "$olddog_md5" != "" -a "$newdog_md5" = "$olddog_md5" ] && {
+		is_wifidog_conf=$(cat /tmp/wifidog.conf |grep GatewayID)
+        [ "$is_wifidog_conf" != "" -a "$newdog_md5" != "" -a "$olddog_md5" != "" -a "$newdog_md5" = "$olddog_md5" ] && {
                 logger "YUNWIFI:remote wifidog conf same ! do nothing!!"
                 exit 0
         }
