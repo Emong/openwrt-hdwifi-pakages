@@ -6,7 +6,7 @@ local domain=$1
 
 get_lan_mac() {
 
-         [ "$(ralink_board_name)" = "mt7620a-evb" ] && local lan_mac=$(cat /sys/class/net/eth2/address)
+         [ -e /lib/ralink.sh ] && local lan_mac=$(cat /sys/class/net/eth2/address)
          echo $lan_mac
 }
 set_yunwifi_str() {

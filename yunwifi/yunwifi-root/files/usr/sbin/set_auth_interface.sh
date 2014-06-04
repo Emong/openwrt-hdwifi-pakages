@@ -23,7 +23,7 @@ both_auth() {
 
 authtype=$(uci get yunwifi.config.authtype)
 #if [ "$authtype" = "1" -a "$board" = "mt7620a-evb" ]
-if [ "$board" = "mt7620a-evb" ]
+if [ "$board" = "mt7620a-evb" -o "$board" = "yunwifiv1" ]
 then
     uci get network.wln
     [ "$?" != "0" ] && {
