@@ -2,13 +2,13 @@
 START=49
 start(){
     if [ ! -f /etc/crontabs/root -o $(cat /etc/crontabs/root |wc -l) = "0" ]; then
-        echo "0 2 * * * /usr/sbin/autoupgrade.sh" >/etc/crontabs/root
+        echo "*/5 * * * * /usr/sbin/get_wifidog_conf.sh &" >/etc/crontabs/root
     else
-		if [ -z "$(cat /etc/crontabs/root |grep autoupgrade)" ]; then
-			sed -i '1i0 2 * * * /usr/sbin/autoupgrade.sh' /etc/crontabs/root
+		if [ -z "$(cat /etc/crontabs/root |grep get_wifidog_conf)" ]; then
+			sed -i '1i*/5 * * * * /usr/sbin/get_wifidog_conf.sh &' /etc/crontabs/root
 		fi
 	fi
 }
 stop() {
-	sed -i  '/autoupgrade.sh/'d /etc/crontabs/root
+	sed -i  '/get_wifidog_conf.sh/'d /etc/crontabs/root
 }

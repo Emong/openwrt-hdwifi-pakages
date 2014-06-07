@@ -89,4 +89,10 @@ get_conf(){
 
         exit 0
 }
-get_conf $1
+if [ "$1" != "" ]
+then
+	get_conf $1
+else
+	local host=$(uci get yunwifi.config.hostname)
+	get_conf $host
+fi

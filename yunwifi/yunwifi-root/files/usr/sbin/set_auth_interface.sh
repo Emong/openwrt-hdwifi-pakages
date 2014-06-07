@@ -1,22 +1,25 @@
 . /lib/ralink.sh
 board=$(ralink_board_name)
 wifi_auth_only() {
-    uci set network.wln=interface
-    uci set network.wln.ifname=eth2.1
-    uci set network.wln.proto=static
-    uci set network.wln.ipaddr=192.168.254.1
-    uci set network.wln.netmask=255.255.255.0
-    uci set firewall.@zone[0].network='lan wln'
+	lan_mac=$(cat /sys/class/net/eth2/address)
+	dmz_mac=$(/usr/sbin/maccalc add "$lan_mac" -1)
+    uci set network.dmz=interface
+    uci set network.dmz.ifname=eth2.1
+    uci set network.dmz.proto=static
+	uci set network.dmz.macaddr=$dmz_mac
+    uci set network.dmz.ipaddr=192.168.254.1
+    uci set network.dmz.netmask=255.255.255.0
+    uci set firewall.@zone[0].network='lan dmz'
     uci set network.lan.ifname=eth2.10
-    uci set dhcp.wln=dhcp
-    uci set dhcp.wln.interface=wln
-    uci set dhcp.wln.leasetime=30m
-    uci set dhcp.wln.limit=150
-    uci set dhcp.wln.start=100
+    uci set dhcp.dmz=dhcp
+    uci set dhcp.dmz.interface=dmz
+    uci set dhcp.dmz.leasetime=30m
+    uci set dhcp.dmz.limit=150
+    uci set dhcp.dmz.start=100
 }
 both_auth() {
-    uci delete network.wln
-    uci delete dhcp.wln
+    uci delete network.dmz
+    uci delete dhcp.dmz
     uci set firewall.@zone[0].network='lan'
     uci set network.lan.ifname=eth2.1    
 }
@@ -25,14 +28,14 @@ authtype=$(uci get yunwifi.config.authtype)
 #if [ "$authtype" = "1" -a "$board" = "mt7620a-evb" ]
 if [ "$board" = "mt7620a-evb" -o "$board" = "yunwifiv1" ]
 then
-    uci get network.wln
+    uci get network.dmz
     [ "$?" != "0" ] && {
         logger "YUNWIFI:wifi auth only mode."
         wifi_auth_only
         uci commit
     }
 else
-    uci get network.wln
+    uci get network.dmz
     [ "$?" = "0" ] && {
         logger "YUNWIFI:hoth auth on lan and wlan interface mode."
         both_auth
