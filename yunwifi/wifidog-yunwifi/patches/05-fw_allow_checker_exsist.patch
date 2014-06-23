@@ -1,0 +1,20 @@
+--- a/arc/fw_iptables.c	2014-06-08 09:56:13.000000000 +0800
++++ b/src/fw_iptables.c	2014-06-08 12:10:38.129109424 +0800
+@@ -546,9 +546,14 @@
+ 
+ 	switch(type) {
+ 		case FW_ACCESS_ALLOW:
+-			iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+-			rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
+-            do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
++//iptables -t mangle -nL WiFiDog_br-lan_Outgoing  |grep 192.168.0.1401
++			rc = iptables_do_command("-t mangle -nL " TABLE_WIFIDOG_OUTGOING " |grep %s",ip);
++			if(rc != 0)	//not has such rule
++			{
++				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
++				rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
++            	do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
++			}
+ 			break;
+ 		case FW_ACCESS_DENY:
+ 			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);

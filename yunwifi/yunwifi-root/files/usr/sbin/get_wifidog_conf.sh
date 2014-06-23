@@ -2,7 +2,7 @@
 . /usr/share/libubox/jshn.sh
 local board
 local yunwifi_str
-local domain=$1
+local domain=$(uci get yunwifi.config.hostname)
 
 get_lan_mac() {
 
