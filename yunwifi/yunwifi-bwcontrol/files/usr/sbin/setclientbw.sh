@@ -3,6 +3,11 @@ IP=$(echo $1 | awk -F . '{print $4}')
 HIP=$1
 DOWNRATE=$2
 UPRATE=$3
+[ "$DOWNRATE" = "0" -o "$UPRATE" = "0"] && {
+	echo "bandwith 0 means no limit!"
+	echo "Exit!"
+	exit 1
+} 
 isin=$(tc class show dev ifb0 classid 1:$IP)
 [ "$isin" = "" ] && {
 	tc class add dev ifb0 parent 1: classid 1:$IP htb rate ${DOWNRATE}kbit

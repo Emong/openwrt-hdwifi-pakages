@@ -1,0 +1,18 @@
+--- a/src/fw_iptables.c	2014-06-23 21:16:00.000000000 +0800
++++ b/src/fw_iptables.c	2014-06-28 07:39:47.455057797 +0800
+@@ -304,6 +304,7 @@
+ 	iptables_do_command("-t mangle -I PREROUTING 1 -i %s -j " TABLE_WIFIDOG_OUTGOING, config->gw_interface);
+ 	iptables_do_command("-t mangle -I PREROUTING 1 -i %s -j " TABLE_WIFIDOG_TRUSTED, config->gw_interface);//this rule will be inserted before the prior one
+ 	iptables_do_command("-t mangle -I POSTROUTING 1 -o %s -j " TABLE_WIFIDOG_INCOMING, config->gw_interface);
++	iptables_do_command("-t mangle -A INPUT -p udp --dport 67 -j " TABLE_WIFIDOG_OUTGOING);
+ 
+ 	for (p = config->trustedmaclist; p != NULL; p = p->next)
+ 		iptables_do_command("-t mangle -A " TABLE_WIFIDOG_TRUSTED " -m mac --mac-source %s -j MARK --set-mark %d", p->mac, FW_MARK_KNOWN);
+@@ -422,6 +423,7 @@
+ 	iptables_fw_destroy_mention("mangle", "PREROUTING", TABLE_WIFIDOG_TRUSTED);
+ 	iptables_fw_destroy_mention("mangle", "PREROUTING", TABLE_WIFIDOG_OUTGOING);
+ 	iptables_fw_destroy_mention("mangle", "POSTROUTING", TABLE_WIFIDOG_INCOMING);
++	iptables_do_command("-t mangle -D INPUT -p udp --dport 67 -j " TABLE_WIFIDOG_OUTGOING);
+ 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_TRUSTED);
+ 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_OUTGOING);
+ 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_INCOMING);
