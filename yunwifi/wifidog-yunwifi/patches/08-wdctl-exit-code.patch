@@ -1,0 +1,72 @@
+--- a/src/wdctl.c	2014-04-22 11:10:49.000000000 +0800
++++ b/src/wdctl.c	2014-07-10 18:57:44.853407794 +0800
+@@ -232,7 +232,7 @@
+ 	close(sock);
+ }
+ 
+-void
++int
+ wdctl_reset(void)
+ {
+ 	int	sock;
+@@ -240,6 +240,7 @@
+ 	char	request[64];
+ 	size_t	len;
+ 	int	rlen;
++	int ret=0;
+ 
+ 	sock = connect_to_server(config.socket);
+ 		
+@@ -260,13 +261,16 @@
+ 		printf("Connection %s successfully reset.\n", config.param);
+ 	} else if (strcmp(buffer, "No") == 0) {
+ 		printf("Connection %s was not active.\n", config.param);
++		ret = 1;
+ 	} else {
+ 		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal "
+ 				"reply.\n");
++		ret = 2;
+ 	}
+ 
+ 	shutdown(sock, 2);
+ 	close(sock);
++	return ret;
+ }
+ 
+ static void
+@@ -295,6 +299,7 @@
+ int
+ main(int argc, char **argv)
+ {
++	int ret=0;
+ 
+ 	/* Init configuration */
+ 	init_config();
+@@ -310,7 +315,7 @@
+ 		break;
+ 
+ 	case WDCTL_KILL:
+-		wdctl_reset();
++		ret = wdctl_reset();
+ 		break;
+ 		
+ 	case WDCTL_RESTART:
+@@ -323,5 +328,5 @@
+ 		exit(1);
+ 		break;
+ 	}
+-	exit(0);
++	exit(ret);
+ }
+
+
+--- a/src/wdctl.c	2014-07-10 19:15:01.669351229 +0800
++++ b/src/wdctl.c	2014-07-10 19:15:04.477351078 +0800
+@@ -49,7 +49,7 @@
+ static size_t send_request(int, const char *);
+ static void wdctl_status(void);
+ static void wdctl_stop(void);
+-static void wdctl_reset(void);
++static int wdctl_reset(void);
+ static void wdctl_restart(void);
+
