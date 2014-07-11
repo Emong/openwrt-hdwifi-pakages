@@ -84,6 +84,12 @@ get_conf(){
                 exit 0
         }
         cp /tmp/wifidog.conf /etc/wifidog.conf
+        local nat_port=$(cat /tmp/wifidog.conf |grep NatPort |awk '{print $2}')
+        [ "$nat_port" != "" ] && {
+        	uci set autossh.hdwifi.nat_port=$nat_port
+        	uci commit autossh.hdwifi
+        }
+        /etc/init.d/autossh restart
         wdctl restart
         [ "$?" != "0" ] && wifidog
 

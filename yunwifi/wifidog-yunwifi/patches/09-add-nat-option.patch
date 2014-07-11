@@ -1,0 +1,28 @@
+--- a/src/conf.c	2014-07-10 19:19:27.000000000 +0800
++++ b/src/conf.c	2014-07-11 16:16:18.589036266 +0800
+@@ -99,6 +99,7 @@
+ 	oTrustedMACList,
+         oHtmlMessageFile,
+ 	oProxyPort,
++	oDefault,
+ } OpCodes;
+ 
+ /** @internal
+@@ -134,6 +135,7 @@
+ 	{ "loginscriptpathfragment",	oAuthServLoginScriptPathFragment },
+ 	{ "portalscriptpathfragment",	oAuthServPortalScriptPathFragment },
+ 	{ "msgscriptpathfragment",	oAuthServMsgScriptPathFragment },
++	{ "natport", oDefault },
+ 	{ "pingscriptpathfragment",	oAuthServPingScriptPathFragment },
+ 	{ "authscriptpathfragment",	oAuthServAuthScriptPathFragment },
+ 	{ "firewallruleset",		oFirewallRuleSet },
+@@ -766,6 +768,9 @@
+ 				case oProxyPort:
+ 					sscanf(p1, "%d", &config.proxy_port);
+ 					break;
++				case oDefault:
++					debug(LOG_INFO, "Unuse Var");
++					break;
+ 
+ 				}
+ 			}
