@@ -1,0 +1,32 @@
+--- a/src/wdctl.c	2014-07-11 16:19:06.000000000 +0800
++++ b/src/wdctl.c	2014-07-15 20:27:09.798982068 +0800
+@@ -67,7 +67,7 @@
+     printf("  -h                Print usage\n");
+     printf("\n");
+     printf("commands:\n");
+-    printf("  reset [mac|ip]    Reset the specified mac or ip connection\n");
++    printf("  reset [mac|ip|token]    Reset the specified mac or ip or token connection\n");
+     printf("  status            Obtain the status of wifidog\n");
+     printf("  stop              Stop the running wifidog\n");
+     printf("  restart           Re-start the running wifidog (without disconnecting active users!)\n");
+@@ -130,7 +130,7 @@
+ 	    config.command = WDCTL_KILL;
+ 	    if ((argc - (optind + 1)) <= 0) {
+ 		    fprintf(stderr, "wdctl: Error: You must specify an IP "
+-				    "or a Mac address to reset\n");
++				    "or a Mac address or a Token to reset\n");
+ 		    usage();
+ 		    exit(1);
+ 	    }
+--- a/src/wdctl_thread.c	2014-04-22 11:10:49.000000000 +0800
++++ b/src/wdctl_thread.c	2014-07-15 20:28:24.454977998 +0800
+@@ -373,7 +373,8 @@
+ 	debug(LOG_DEBUG, "Argument: %s (@%x)", arg, arg);
+ 	
+ 	/* We get the node or return... */
+-	if ((node = client_list_find_by_ip(arg)) != NULL);
++	if ((node = client_list_find_by_token(arg)) != NULL);
++	else if ((node = client_list_find_by_ip(arg)) != NULL);
+ 	else if ((node = client_list_find_by_mac(arg)) != NULL);
+ 	else {
+ 		debug(LOG_DEBUG, "Client not found.");

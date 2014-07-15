@@ -69,4 +69,5 @@
 -static void wdctl_reset(void);
 +static int wdctl_reset(void);
  static void wdctl_restart(void);
-
+ 
+ /** @internal
