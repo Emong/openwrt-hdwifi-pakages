@@ -1,5 +1,6 @@
 . /etc/openwrt_release
 . /usr/share/libubox/jshn.sh
+. /etc/openwrt_release
 local board
 local yunwifi_str
 local domain=$(uci get yunwifi.config.hostname)
@@ -69,12 +70,13 @@ get_conf(){
 		get_yunwifi_str
         uri="/yunwifi/wifi/getconf.action"
         host="http://${1}"
-        url="${host}${uri}?aptype=${board}&gw_id=${yunwifi_str}"
+        url="${host}${uri}?aptype=${board}&gw_id=${yunwifi_str}&currentversion=${DISTRIB_VERSION}"
         wget -qO /tmp/wifidog.conf $url
-        [ "$?" != "0" ] && {
-            logger "YUNWIFI:wifidog remote config fail!"            
-            exit 1
-        }
+        while [ "$?" != "0" ]
+		do
+            sleep 5
+			wget -qO /tmp/wifidog.conf $url
+        done
         sed -i 's/\r//' /tmp/wifidog.conf
         newdog_md5=$(md5sum /tmp/wifidog.conf |awk '{print $1}')
         olddog_md5=$(md5sum /etc/wifidog.conf |awk '{print $1}')
@@ -84,12 +86,6 @@ get_conf(){
                 exit 0
         }
         cp /tmp/wifidog.conf /etc/wifidog.conf
-        local nat_port=$(cat /tmp/wifidog.conf |grep NatPort |awk '{print $2}')
-        [ "$nat_port" != "" ] && {
-        	uci set autossh.hdwifi.nat_port=$nat_port
-        	uci commit autossh.hdwifi
-        }
-        /etc/init.d/autossh restart
         wdctl restart
         [ "$?" != "0" ] && wifidog
 

@@ -6,13 +6,13 @@ EXTRA_HELP="        status Print the status of the service"
 
 start() {
     /usr/sbin/setifbroot.sh
-	/usr/bin/wifidog-init start
+	/usr/sbin/get_wifidog_conf.sh &
 }
 
 stop() {
-	/usr/bin/wifidog-init stop
+	/usr/bin/wdctl stop
 }
 
 status() {
-	/usr/bin/wifidog-init status
+	/usr/bin/wdctl status
 }
