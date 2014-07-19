@@ -42,6 +42,7 @@ endef
 define Package/yunwifi-root/install
 	$(INSTALL_DIR) $(1)
 	$(CP) ./files/* $(1)/
+	chmod 700 $(1)/etc/dropbear
 endef
 
 $(eval $(call BuildPackage,yunwifi-root))
