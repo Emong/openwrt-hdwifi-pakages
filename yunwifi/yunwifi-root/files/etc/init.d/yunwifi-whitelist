@@ -1,8 +1,7 @@
 #!/bin/sh /etc/rc.common
 START=99
 start(){
-    whitelist.sh do_table
-	whitelist.sh update-with-dnsmasq
+    whitelist.sh start
 	/usr/sbin/check_dog.sh &
 }
 stop() {   

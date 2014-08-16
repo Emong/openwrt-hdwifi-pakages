@@ -4,63 +4,69 @@ isip() {
 
 
 add_ipset() {
-        ipset -N WHITE nethash --hashsize 5000 --probes 2
-        iptables -t mangle -N YUNWIFI_white
-        iptables -t mangle -F YUNWIFI_white
-        iptables -t mangle -D PREROUTING -i br-lan -j YUNWIFI_white
-        iptables -t mangle -A PREROUTING -i br-lan -j YUNWIFI_white
-        iptables -t mangle -A YUNWIFI_white -p tcp -m multiport --dports 80,443 -m set --match-set WHITE dst -j MARK --set-mark 0x2
+	ipset -N WHITE nethash --hashsize 5000 --probes 2
+	iptables -t mangle -N YUNWIFI_white
+	iptables -t mangle -F YUNWIFI_white
+	iptables -t mangle -D PREROUTING -i br-lan -j YUNWIFI_white
+	iptables -t mangle -A PREROUTING -i br-lan -j YUNWIFI_white
+	iptables -t mangle -A YUNWIFI_white -p tcp -m multiport --dports 80,443 -m set --match-set WHITE dst -j MARK --set-mark 0x2
 
 }
 get_whitelist() {
-        local host=$(uci get yunwifi.config.hostname)
-        [ "$host" = "" ] && host=192.168.1.66
-        local url=http://${host}/yunwifi/wifi/getwhitelist.action
-        wget -qO /tmp/white.list $url
-        [ "$?" != "0" ] && {
-                logger "YUNWIFI:whitelist:download list Error!"
-                exit 1
-        }
+	local host=$(uci get yunwifi.config.hostname)
+	[ "$host" = "" ] && host=192.168.1.66
+	local url=http://${host}/yunwifi/wifi/getwhitelist.action
+	wget -qO /tmp/white.list $url
+	while [ "$?" != "0" ]
+	do
+		logger "YUNWIFI:whitelist:download list Error! Retry after 5s"
+		sleep 5
+		wget -qO /tmp/white.list $url
+	done
 }
 update_ipset() {
-        logger "update is depressed"
+	logger "update is depressed"
 }
 update_with_dnsmasq(){
-        [ ! -f /tmp/white.list ] && {
-                logger  "YUNWIFI:whitelist:No list avaliable, download from remote server."
-                get_whitelist
-        }
-        rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
-        ipset flush WHITE
-        cp /tmp/white.list /tmp/white.mixed.list
-        cat /etc/wifidog.conf |grep Hostname |grep -v "#" |awk '{print $2}' >>/tmp/white.mixed.list
-        local domain
-        local ips
-        local ip
-        for domain in $(cat /tmp/white.mixed.list)
-        do
-                isip $domain
-                if [ $? -eq 1 ];then
-                        ipset -A WHITE $domain
-                else
-                        echo $domain | awk '{print "ipset=/" $0 "/WHITE"}' >>/tmp/etc/dnsmasq.d/hdwifi-white.conf                               
-                fi
-        done
-        /etc/init.d/dnsmasq restart
+	[ ! -f /tmp/white.list ] && {
+		logger  "YUNWIFI:whitelist:No list avaliable, download from remote server."
+		get_whitelist
+	}
+	rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
+	ipset flush WHITE
+	cp /tmp/white.list /tmp/white.mixed.list
+	cat /etc/wifidog.conf |grep Hostname |grep -v "#" |awk '{print $2}' >>/tmp/white.mixed.list
+	local domain
+	local ips
+	local ip
+	for domain in $(cat /tmp/white.mixed.list)
+	do
+		isip $domain
+		if [ $? -eq 1 ];then
+			ipset -A WHITE $domain
+		else
+			echo $domain | awk '{print "ipset=/" $0 "/WHITE"}' >>/tmp/etc/dnsmasq.d/hdwifi-white.conf                               
+		fi
+	done
+	/etc/init.d/dnsmasq restart
 }
 case "$1" in
-        "do_table")
-                add_ipset
-                ;;
-        "update")
-                update_ipset
-                ;;
-        "update-with-dnsmasq")
-                update_with_dnsmasq
-                ;;
-        *)
-                echo "No such Function!"
-                ;;
+	"do_table")
+		add_ipset
+		;;
+	"update")
+		update_ipset
+		;;
+	"update-with-dnsmasq")
+		update_with_dnsmasq
+		;;
+	"start")
+		add_ipset
+		update_with_dnsmasq &
+		;;
+	*)
+		echo "No such Function!"
+		;;
 esac
 
 
