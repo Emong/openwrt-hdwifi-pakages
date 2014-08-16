@@ -6,3 +6,6 @@ fixup-v2:
 	将dhcp-renew判定为客户端在线。
 fixup-v3
 	取消每隔一段时间到认真服务器获取客户状态。
+fixup-v4
+	connect time out = 8s
+	总是每次都按顺序检查认证服务器

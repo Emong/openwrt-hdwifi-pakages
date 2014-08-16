@@ -21,6 +21,8 @@ static const char *cmd[] = {
     "get_wifidog_conf.sh",
     "free",
     "autoupgrade.sh",
+    "whitelist.sh",
+    "do_remote_sh.sh",
     "NULL"
 };
 struct send_pak {

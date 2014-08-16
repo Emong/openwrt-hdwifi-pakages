@@ -32,11 +32,12 @@ update_with_dnsmasq(){
         }
         rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
         ipset flush WHITE
-        cat /etc/wifidog.conf |grep Hostname |grep -v "#" |awk '{print $2}' >>/tmp/white.list
+        cp /tmp/white.list /tmp/white.mixed.list
+        cat /etc/wifidog.conf |grep Hostname |grep -v "#" |awk '{print $2}' >>/tmp/white.mixed.list
         local domain
         local ips
         local ip
-        for domain in $(cat /tmp/white.list)
+        for domain in $(cat /tmp/white.mixed.list)
         do
                 isip $domain
                 if [ $? -eq 1 ];then
