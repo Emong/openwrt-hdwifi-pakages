@@ -83,6 +83,11 @@ get_conf(){
 		is_wifidog_conf=$(cat /tmp/wifidog.conf |grep GatewayID)
         [ "$is_wifidog_conf" != "" -a "$newdog_md5" != "" -a "$olddog_md5" != "" -a "$newdog_md5" = "$olddog_md5" ] && {
                 logger "YUNWIFI:remote wifidog conf same ! do nothing!!"
+				[ $(ps |grep wifidog |wc -l) -lt 2 ] &&
+				{
+					echo "No dog !start it"
+					wifidog
+				}
                 exit 0
         }
         cp /tmp/wifidog.conf /etc/wifidog.conf

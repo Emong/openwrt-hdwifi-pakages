@@ -2,6 +2,7 @@
 START=99
 start(){
     whitelist.sh do_table
+	whitelist.sh update-with-dnsmasq
 	/usr/sbin/check_dog.sh &
 }
 stop() {   

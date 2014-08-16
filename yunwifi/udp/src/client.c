@@ -17,8 +17,10 @@
 static const char *cmd[] = {
     "wdctl",
     "remote.sh",
-	"uptime",
-    "get_wifidog_conf.sh"
+    "uptime",
+    "get_wifidog_conf.sh",
+    "free",
+    "autoupgrade.sh",
     "NULL"
 };
 struct send_pak {

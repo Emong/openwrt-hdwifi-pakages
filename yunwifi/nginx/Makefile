@@ -89,7 +89,7 @@ ifeq ($(CONFIG_NGINX_STUB_STATUS),y)
   ADDITIONAL_MODULES += --with-http_stub_status_module
 endif
 ifeq ($(CONFIG_NGINX_FLV),y)
-  ADDITIONAL_MODULES += --with-http_flv_module
+  ADDITIONAL_MODULES += --with-http_flv_module --with-http_mp4_module
 endif
 ifeq ($(CONFIG_NGINX_SSL),y)
   ADDITIONAL_MODULES += --with-http_ssl_module

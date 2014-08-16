@@ -1,0 +1,20 @@
+--- a/src/centralserver.c	2014-04-22 11:10:49.000000000 +0800
++++ b/src/centralserver.c	2014-08-16 10:30:19.111009659 +0800
+@@ -284,7 +284,7 @@
+ 				free(auth_server->last_ip);
+ 				auth_server->last_ip = NULL;
+ 			}
+-			mark_auth_server_bad(auth_server);
++//			mark_auth_server_bad(auth_server);
+ 			return _connect_auth_server(level);
+ 		}
+ 		else {
+@@ -349,7 +349,7 @@
+ 			 */
+ 			debug(LOG_DEBUG, "Level %d: Failed to connect to auth server %s:%d (%s). Marking it as bad and trying next if possible", level, hostname, auth_server->authserv_http_port, strerror(errno));
+ 			close(sockfd);
+-			mark_auth_server_bad(auth_server);
++//			mark_auth_server_bad(auth_server);
+ 			return _connect_auth_server(level); /* Yay recursion! */
+ 		}
+ 		else {

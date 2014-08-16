@@ -1,3 +1,8 @@
+isip() {
+	echo $1 | awk -F'.' '{if($1<=255&&$1>0&&$2<=255&&$2>=0&&$3<=255&&$3>=0&&$4<=255&&$4>=0){exit 1 }else {exit 0}}'
+}
+
+
 add_ipset() {
         ipset -N WHITE nethash --hashsize 5000 --probes 2
         iptables -t mangle -N YUNWIFI_white
@@ -18,24 +23,29 @@ get_whitelist() {
         }
 }
 update_ipset() {
+        logger "update is depressed"
+}
+update_with_dnsmasq(){
         [ ! -f /tmp/white.list ] && {
                 logger  "YUNWIFI:whitelist:No list avaliable, download from remote server."
                 get_whitelist
         }
+        rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
+        ipset flush WHITE
+        cat /etc/wifidog.conf |grep Hostname |grep -v "#" |awk '{print $2}' >>/tmp/white.list
         local domain
         local ips
         local ip
         for domain in $(cat /tmp/white.list)
         do
-                ips=$(resolveip -4 -t 10 $domain)
-                for ip in $(resolveip -4 -t 10 $domain)
-                do
-                        ipset test WHITE $ip 2>/dev/null
-                        [ "$?" != "0" ] && {
-                                ipset -A WHITE $ip
-                        }
-                done
+                isip $domain
+                if [ $? -eq 1 ];then
+                        ipset -A WHITE $domain
+                else
+                        echo $domain | awk '{print "ipset=/" $0 "/WHITE"}' >>/tmp/etc/dnsmasq.d/hdwifi-white.conf                               
+                fi
         done
+        /etc/init.d/dnsmasq restart
 }
 case "$1" in
         "do_table")
@@ -43,6 +53,9 @@ case "$1" in
                 ;;
         "update")
                 update_ipset
+                ;;
+        "update-with-dnsmasq")
+                update_with_dnsmasq
                 ;;
         *)
                 echo "No such Function!"
