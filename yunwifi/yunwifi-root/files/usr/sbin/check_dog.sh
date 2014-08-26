@@ -1,18 +1,19 @@
 #!/bin/sh
-i=0
 while true
 do
+	[ ! -e /tmp/dog-startat ] && cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
 	[ $(ps |grep wifidog |wc -l) -lt 2 ] &&
 	{
 		echo "No dog !start it"
 		wifidog
-		i=0
+		cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
 	}
-	let i=$i+1
-	[ $i -ge 288 ] && 
+	dogstart=$(cat /tmp/dog-startat)
+	dognow=$(cat /proc/uptime |awk '{printf("%d\n",$1)}')
+	[ $(($dognow - $dogstart)) -ge 86400 ] && 
 	{
 		wdctl restart
-		i=0
+		[ "$?" = "0" ] && cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
 	}
 	sleep 300
 done
