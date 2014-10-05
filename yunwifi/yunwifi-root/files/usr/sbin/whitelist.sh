@@ -20,7 +20,7 @@ get_whitelist() {
 	wget -qO /tmp/white.list $url
 	while [ "$?" != "0" ]
 	do
-		logger "YUNWIFI:whitelist:download list Error! Retry after 5s"
+		logger -t HDWIFI:whitelist download list Error! Retry after 5s
 		sleep 5
 		wget -qO /tmp/white.list $url
 	done
@@ -29,10 +29,8 @@ update_ipset() {
 	logger "update is depressed"
 }
 update_with_dnsmasq(){
-	[ ! -f /tmp/white.list ] && {
-		logger  "YUNWIFI:whitelist:No list avaliable, download from remote server."
-		get_whitelist
-	}
+	logger -t HDWIFI:whitelist download whitelest from central server.
+	get_whitelist
 	rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
 	ipset flush WHITE
 	cp /tmp/white.list /tmp/white.mixed.list

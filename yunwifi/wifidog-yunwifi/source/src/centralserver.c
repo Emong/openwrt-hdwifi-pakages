@@ -192,6 +192,25 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 	if ((tmp = strstr(buf, "Auth: "))) {
 		if (sscanf(tmp, "Auth: %d", (int *)&authresponse->authcode) == 1) {
 			debug(LOG_INFO, "Auth server returned authentication code %d", authresponse->authcode);
+			if(authresponse->authcode == 1) {
+				debug(LOG_INFO, "Auth server returned 1,then check bandwidth.");
+				int bwdn=0,bwup=0;
+				if ((tmp = strstr(buf, "Bwdn: "))) {
+					if (sscanf(tmp, "Bwdn: %d", &bwdn) == 1) {
+						debug(LOG_INFO, "Auth server returned user download bandwidth %d", bwdn);		
+					}
+				}
+				if ((tmp = strstr(buf, "Bwup: "))) {
+					if (sscanf(tmp, "Bwup: %d", &bwup) == 1) {
+						debug(LOG_INFO, "Auth server returned user upload bandwidth %d", bwup);
+					}
+				}
+				if(bwdn==0 || bwup==0){
+					bwdn=config_get_config()->clientbandwidthdown;
+					bwup=config_get_config()->clientbandwidthup;
+				}
+				do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,bwdn,bwup);
+			}
 			return(authresponse->authcode);
 		} else {
 			debug(LOG_WARNING, "Auth server did not return expected authentication code");

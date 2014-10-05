@@ -126,6 +126,30 @@ execute(const char *cmd_line, int quiet)
         return (WEXITSTATUS(status));
 }
 
+int do_cmd(const char *format, ...)
+{
+    va_list vlist;
+	char *fmt_cmd;
+	char *cmd;
+	int rc;
+
+	va_start(vlist, format);
+	safe_vasprintf(&fmt_cmd, format, vlist);
+	va_end(vlist);
+
+	safe_asprintf(&cmd, "%s", fmt_cmd);
+	free(fmt_cmd);
+
+
+	debug(LOG_DEBUG, "Executing command: %s", cmd);
+
+	rc = execute(cmd, 1);
+
+	free(cmd);
+
+	return rc;
+}
+
 	struct in_addr *
 wd_gethostbyname(const char *name)
 {

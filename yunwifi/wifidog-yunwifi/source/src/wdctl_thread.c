@@ -366,6 +366,9 @@ static void
 wdctl_reset(int fd, const char *arg)
 {
 	t_client	*node;
+	char *token, *ip, *mac;
+	unsigned long long	    incoming, outgoing;
+	t_authresponse  authresponse;
 
 	debug(LOG_DEBUG, "Entering wdctl_reset...");
 	
@@ -391,10 +394,17 @@ wdctl_reset(int fd, const char *arg)
 	/* TODO: maybe just deleting the connection is not best... But this
 	 * is a manual command, I don't anticipate it'll be that useful. */
 	fw_deny(node->ip, node->mac, node->fw_connection_state);
+	ip = safe_strdup(node->ip);
+    token = safe_strdup(node->token);
+    mac = safe_strdup(node->mac);
+    outgoing = node->counters.outgoing;
+	incoming = node->counters.incoming;
 	client_list_delete(node);
 
 	UNLOCK_CLIENT_LIST();
 
+	auth_server_request(&authresponse, REQUEST_TYPE_LOGOUT, ip, mac, token, incoming, outgoing);
+	debug(LOG_DEBUG, "wdctl sync with centralserver,it returned:%d",authresponse.authcode);
 	if(write(fd, "Yes", 3) == -1)
 		debug(LOG_CRIT, "Unable to write Yes: %s", strerror(errno));
 

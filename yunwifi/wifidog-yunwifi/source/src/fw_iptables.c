@@ -49,7 +49,6 @@
 #include "client_list.h"
 
 static int iptables_do_command(const char *format, ...);
-static int do_cmd(const char *format, ...);
 static char *iptables_compile(const char *, const char *, const t_firewall_rule *);
 static void iptables_load_ruleset(const char *, const char *, const char *);
 
@@ -125,38 +124,6 @@ iptables_do_command(const char *format, ...)
 
 	return rc;
 }
-static int do_cmd(const char *format, ...)
-{
-    va_list vlist;
-	char *fmt_cmd;
-	char *cmd;
-	int rc;
-
-	va_start(vlist, format);
-	safe_vasprintf(&fmt_cmd, format, vlist);
-	va_end(vlist);
-
-	safe_asprintf(&cmd, "%s", fmt_cmd);
-	free(fmt_cmd);
-
-
-	debug(LOG_DEBUG, "Executing command: %s", cmd);
-
-	rc = execute(cmd, fw_quiet);
-
-	if (rc!=0) {
-		// If quiet, do not display the error
-		if (fw_quiet == 0)
-			debug(LOG_ERR, "iptables command failed(%d): %s", rc, cmd);
-		else if (fw_quiet == 1)
-			debug(LOG_DEBUG, "iptables command failed(%d): %s", rc, cmd);
-	}
-
-	free(cmd);
-
-	return rc;
-}
-
 /**
  * @internal
  * Compiles a struct definition of a firewall rule into a valid iptables
@@ -552,15 +519,15 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 			rc = iptables_do_command("-t mangle -nL " TABLE_WIFIDOG_OUTGOING " |grep %s",ip);
 			if(rc != 0)	//not has such rule
 			{
-				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -j MARK --set-mark %d", ip, tag);
 				rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
-            	do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
+            	//do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
 			}
 			break;
 		case FW_ACCESS_DENY:
-			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -j MARK --set-mark %d", ip, tag);
 			rc = iptables_do_command("-t mangle -D " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
-            do_cmd("/usr/sbin/delclientbw.sh %s",ip);
+            //do_cmd("/usr/sbin/delclientbw.sh %s",ip);
 			break;
 		default:
 			rc = -1;

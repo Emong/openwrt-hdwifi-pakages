@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wifidog-yunwifi
-PKG_VERSION:=20130917
-PKG_RELEASE=$(PKG_SOURCE_VERSION)
+PKG_VERSION:=20130917-fixup-v4
+PKG_RELEASE=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git://github.com/wifidog/wifidog-gateway.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=440445db60b0c3aff528ea703a828b0567293387
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
+#PKG_SOURCE_PROTO:=git
+#PKG_SOURCE_URL:=git://github.com/wifidog/wifidog-gateway.git
+#PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+#PKG_SOURCE_VERSION:=440445db60b0c3aff528ea703a828b0567293387
+#PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
@@ -29,6 +29,11 @@ define Package/wifidog-yunwifi
   DEPENDS:=+iptables-mod-extra +iptables-mod-ipopt +iptables-mod-nat-extra +libpthread +yunwifi-bwcontrol
   TITLE:=A wireless captive portal solution
   URL:=http://www.wifidog.org
+endef
+
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	$(CP) ./source/* $(PKG_BUILD_DIR)/
 endef
 
 define Package/wifidog-yunwifi/description
