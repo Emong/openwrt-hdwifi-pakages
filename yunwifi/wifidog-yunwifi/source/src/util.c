@@ -439,7 +439,7 @@ get_ext_iface(void)
 		snprintf(buffer, (sizeof(buffer) - len), "WiFiDog status\n\n");
 		len = strlen(buffer);
 
-		uptime = time(NULL) - started_time;
+		uptime = ktime() - started_time;
 		days    = uptime / (24 * 60 * 60);
 		uptime -= days * (24 * 60 * 60);
 		hours   = uptime / (60 * 60);

@@ -104,7 +104,7 @@ ping(void)
 	unsigned int      sys_memfree = 0;
 	float             sys_load    = 0;
 	t_auth_serv	*auth_server = NULL;
-	auth_server = get_auth_server();
+//	auth_server = get_auth_server();
 	
 	debug(LOG_DEBUG, "Entering ping()");
 	
@@ -120,7 +120,7 @@ ping(void)
 		 */
 		return;
 	}
-
+	auth_server = get_auth_server();
 	/*
 	 * Populate uptime, memfree and load
 	 */
@@ -164,7 +164,7 @@ ping(void)
 			sys_uptime,
 			sys_memfree,
 			sys_load,
-			(long unsigned int)((long unsigned int)time(NULL) - (long unsigned int)started_time),
+			(long unsigned int)((long unsigned int)sys_uptime - (long unsigned int)started_time),
 			VERSION,
 			auth_server->authserv_hostname);
 

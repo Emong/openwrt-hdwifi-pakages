@@ -51,6 +51,32 @@
 
 extern pthread_mutex_t	config_mutex;
 
+/** in connect function emong added,for quickly find useable server
+
+*/
+int in_connect_auth_server(t_auth_serv *server) {
+	int sockfd,level=0;
+	s_config *config = config_get_config();
+	t_auth_serv *tmp_server;
+	for (tmp_server = config->auth_servers; tmp_server; tmp_server = tmp_server->next) {
+		if(tmp_server == server)	//find it
+			break;
+		++level;
+	}
+	LOCK_CONFIG();
+	sockfd = _connect_auth_server(level);
+	UNLOCK_CONFIG();
+
+	if (sockfd == -1) {
+		debug(LOG_ERR, "Failed to connect to any of the auth servers");
+		mark_auth_offline();
+	}
+	else {
+		debug(LOG_DEBUG, "Connected to auth server");
+		mark_auth_online();
+	}
+	return (sockfd);
+}
 /** Initiates a transaction with the auth server, either to authenticate or to
  * update the traffic counters at the server
 @param authresponse Returns the information given by the central server 
@@ -79,7 +105,7 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 	/* Blanket default is error. */
 	authresponse->authcode = AUTH_ERROR;
 	
-	sockfd = connect_auth_server();
+	sockfd = in_connect_auth_server(auth_server);
 	if (sockfd == -1) {
 		/* Could not connect to any auth server */
 		return (AUTH_ERROR);
@@ -243,7 +269,13 @@ int _connect_auth_server(int level) {
 	/*
 	 * Let's resolve the hostname of the top server to an IP address
 	 */
+	int auth_i = 1;
 	auth_server = config->auth_servers;
+	while(auth_i < level)
+	{
+		auth_server = auth_server->next;
+		++auth_i;
+	}
 	hostname = auth_server->authserv_hostname;
 	debug(LOG_DEBUG, "Level %d: Resolving auth server [%s]", level, hostname);
 	h_addr = wd_gethostbyname(hostname);
@@ -341,7 +373,10 @@ int _connect_auth_server(int level) {
 			debug(LOG_ERR, "Level %d: Failed to create a new SOCK_STREAM socket: %s", strerror(errno));
 			return(-1);
 		}
-
+		struct timeval auth_server_timeout;
+		auth_server_timeout.tv_sec = 5;	//设置5秒
+		auth_server_timeout.tv_usec = 0;
+		setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &auth_server_timeout, sizeof(auth_server_timeout));	//connect time out
 		if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
 			/*
 			 * Failed to connect
@@ -357,6 +392,7 @@ int _connect_auth_server(int level) {
 			 * We have successfully connected
 			 */
 			debug(LOG_DEBUG, "Level %d: Successfully connected to auth server %s:%d", level, hostname, auth_server->authserv_http_port);
+			auth_server->inuse = 1;
 			return sockfd;
 		}
 	}

@@ -49,7 +49,7 @@ static int connect_to_server(const char *);
 static size_t send_request(int, const char *);
 static void wdctl_status(void);
 static void wdctl_stop(void);
-static void wdctl_reset(void);
+static int wdctl_reset(void);
 static void wdctl_restart(void);
 
 /** @internal
@@ -67,7 +67,7 @@ usage(void)
     printf("  -h                Print usage\n");
     printf("\n");
     printf("commands:\n");
-    printf("  reset [mac|ip]    Reset the specified mac or ip connection\n");
+    printf("  reset [mac|ip|token]    Reset the specified mac or ip or token connection\n");
     printf("  status            Obtain the status of wifidog\n");
     printf("  stop              Stop the running wifidog\n");
     printf("  restart           Re-start the running wifidog (without disconnecting active users!)\n");
@@ -130,7 +130,7 @@ parse_commandline(int argc, char **argv)
 	    config.command = WDCTL_KILL;
 	    if ((argc - (optind + 1)) <= 0) {
 		    fprintf(stderr, "wdctl: Error: You must specify an IP "
-				    "or a Mac address to reset\n");
+				    "or a Mac address or a Token to reset\n");
 		    usage();
 		    exit(1);
 	    }
@@ -232,7 +232,7 @@ wdctl_stop(void)
 	close(sock);
 }
 
-void
+int
 wdctl_reset(void)
 {
 	int	sock;
@@ -240,6 +240,7 @@ wdctl_reset(void)
 	char	request[64];
 	size_t	len;
 	int	rlen;
+	int ret=0;
 
 	sock = connect_to_server(config.socket);
 		
@@ -260,13 +261,16 @@ wdctl_reset(void)
 		printf("Connection %s successfully reset.\n", config.param);
 	} else if (strcmp(buffer, "No") == 0) {
 		printf("Connection %s was not active.\n", config.param);
+		ret = 1;
 	} else {
 		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal "
 				"reply.\n");
+		ret = 2;
 	}
 
 	shutdown(sock, 2);
 	close(sock);
+	return ret;
 }
 
 static void
@@ -295,6 +299,7 @@ wdctl_restart(void)
 int
 main(int argc, char **argv)
 {
+	int ret=0;
 
 	/* Init configuration */
 	init_config();
@@ -310,7 +315,7 @@ main(int argc, char **argv)
 		break;
 
 	case WDCTL_KILL:
-		wdctl_reset();
+		ret = wdctl_reset();
 		break;
 		
 	case WDCTL_RESTART:
@@ -323,5 +328,5 @@ main(int argc, char **argv)
 		exit(1);
 		break;
 	}
-	exit(0);
+	exit(ret);
 }

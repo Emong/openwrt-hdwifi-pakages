@@ -253,7 +253,8 @@ fw_sync_with_authserver(void)
         icmp_ping(ip);
         /* Update the counters on the remote server only if we have an auth server */
         if (config->auth_servers != NULL) {
-            auth_server_request(&authresponse, REQUEST_TYPE_COUNTERS, ip, mac, token, incoming, outgoing);
+            //auth_server_request(&authresponse, REQUEST_TYPE_COUNTERS, ip, mac, token, incoming, outgoing);
+			authresponse.authcode = AUTH_ALLOWED;
         }
 	    LOCK_CLIENT_LIST();
 
@@ -275,7 +276,7 @@ fw_sync_with_authserver(void)
                 /* Advertise the logout if we have an auth server */
                 if (config->auth_servers != NULL) {
 					UNLOCK_CLIENT_LIST();
-					auth_server_request(&authresponse, REQUEST_TYPE_LOGOUT, ip, mac, token, 0, 0);
+					auth_server_request(&authresponse, REQUEST_TYPE_LOGOUT, ip, mac, token, incoming, outgoing);
 					LOCK_CLIENT_LIST();
                 }
             } else {

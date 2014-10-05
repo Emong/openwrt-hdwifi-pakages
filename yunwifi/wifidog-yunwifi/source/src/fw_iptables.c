@@ -49,6 +49,7 @@
 #include "client_list.h"
 
 static int iptables_do_command(const char *format, ...);
+static int do_cmd(const char *format, ...);
 static char *iptables_compile(const char *, const char *, const t_firewall_rule *);
 static void iptables_load_ruleset(const char *, const char *, const char *);
 
@@ -107,6 +108,37 @@ iptables_do_command(const char *format, ...)
 	free(fmt_cmd);
 
 	iptables_insert_gateway_id(&cmd);
+
+	debug(LOG_DEBUG, "Executing command: %s", cmd);
+
+	rc = execute(cmd, fw_quiet);
+
+	if (rc!=0) {
+		// If quiet, do not display the error
+		if (fw_quiet == 0)
+			debug(LOG_ERR, "iptables command failed(%d): %s", rc, cmd);
+		else if (fw_quiet == 1)
+			debug(LOG_DEBUG, "iptables command failed(%d): %s", rc, cmd);
+	}
+
+	free(cmd);
+
+	return rc;
+}
+static int do_cmd(const char *format, ...)
+{
+    va_list vlist;
+	char *fmt_cmd;
+	char *cmd;
+	int rc;
+
+	va_start(vlist, format);
+	safe_vasprintf(&fmt_cmd, format, vlist);
+	va_end(vlist);
+
+	safe_asprintf(&cmd, "%s", fmt_cmd);
+	free(fmt_cmd);
+
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
 
@@ -272,6 +304,7 @@ iptables_fw_init(void)
 	iptables_do_command("-t mangle -I PREROUTING 1 -i %s -j " TABLE_WIFIDOG_OUTGOING, config->gw_interface);
 	iptables_do_command("-t mangle -I PREROUTING 1 -i %s -j " TABLE_WIFIDOG_TRUSTED, config->gw_interface);//this rule will be inserted before the prior one
 	iptables_do_command("-t mangle -I POSTROUTING 1 -o %s -j " TABLE_WIFIDOG_INCOMING, config->gw_interface);
+	iptables_do_command("-t mangle -A INPUT -p udp --dport 67 -j " TABLE_WIFIDOG_OUTGOING);
 
 	for (p = config->trustedmaclist; p != NULL; p = p->next)
 		iptables_do_command("-t mangle -A " TABLE_WIFIDOG_TRUSTED " -m mac --mac-source %s -j MARK --set-mark %d", p->mac, FW_MARK_KNOWN);
@@ -390,6 +423,7 @@ iptables_fw_destroy(void)
 	iptables_fw_destroy_mention("mangle", "PREROUTING", TABLE_WIFIDOG_TRUSTED);
 	iptables_fw_destroy_mention("mangle", "PREROUTING", TABLE_WIFIDOG_OUTGOING);
 	iptables_fw_destroy_mention("mangle", "POSTROUTING", TABLE_WIFIDOG_INCOMING);
+	iptables_do_command("-t mangle -D INPUT -p udp --dport 67 -j " TABLE_WIFIDOG_OUTGOING);
 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_TRUSTED);
 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_OUTGOING);
 	iptables_do_command("-t mangle -F " TABLE_WIFIDOG_INCOMING);
@@ -514,12 +548,19 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 
 	switch(type) {
 		case FW_ACCESS_ALLOW:
-			iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
-			rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
+//iptables -t mangle -nL WiFiDog_br-lan_Outgoing  |grep 192.168.0.1401
+			rc = iptables_do_command("-t mangle -nL " TABLE_WIFIDOG_OUTGOING " |grep %s",ip);
+			if(rc != 0)	//not has such rule
+			{
+				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
+				rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
+            	do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
+			}
 			break;
 		case FW_ACCESS_DENY:
 			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
 			rc = iptables_do_command("-t mangle -D " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
+            do_cmd("/usr/sbin/delclientbw.sh %s",ip);
 			break;
 		default:
 			rc = -1;

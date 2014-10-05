@@ -95,7 +95,6 @@ void append_x_restartargv(void) {
 	restartargv[i++] = safe_strdup("-x");
 	safe_asprintf(&(restartargv[i++]), "%d", getpid());
 }
-
 /* @internal
  * @brief During gateway restart, connects to the parent process via the internal socket
  * Downloads from it the active client list
@@ -370,11 +369,11 @@ main_loop(void)
     /* Set the time when wifidog started */
 	if (!started_time) {
 		debug(LOG_INFO, "Setting started_time");
-		started_time = time(NULL);
+		started_time = ktime();
 	}
 	else if (started_time < MINIMUM_STARTED_TIME) {
 		debug(LOG_WARNING, "Detected possible clock skew - re-setting started_time");
-		started_time = time(NULL);
+		started_time = ktime();
 	}
 
 	/* If we don't have the Gateway IP address, get it. Can't fail. */

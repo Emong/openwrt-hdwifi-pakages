@@ -36,6 +36,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <sys/sysinfo.h>
 #include "common.h"
 #include "safe.h"
 #include "debug.h"
@@ -88,6 +89,8 @@ typedef enum {
         oHTTPDUsername,
         oHTTPDPassword,
 	oClientTimeout,
+    oClientBandwidthUp,
+    oClientBandwidthDown,
 	oCheckInterval,
 	oWdctlSocket,
 	oSyslogFacility,
@@ -96,6 +99,7 @@ typedef enum {
 	oTrustedMACList,
         oHtmlMessageFile,
 	oProxyPort,
+	oDefault,
 } OpCodes;
 
 /** @internal
@@ -118,6 +122,8 @@ static const struct {
 	{ "httpdusername",		oHTTPDUsername },
 	{ "httpdpassword",		oHTTPDPassword },
 	{ "clienttimeout",      	oClientTimeout },
+    { "clientbandwidthup",      oClientBandwidthUp},
+    { "clientbandwidthdown",    oClientBandwidthDown},
 	{ "checkinterval",      	oCheckInterval },
 	{ "syslogfacility", 		oSyslogFacility },
 	{ "wdctlsocket",		oWdctlSocket },
@@ -129,6 +135,7 @@ static const struct {
 	{ "loginscriptpathfragment",	oAuthServLoginScriptPathFragment },
 	{ "portalscriptpathfragment",	oAuthServPortalScriptPathFragment },
 	{ "msgscriptpathfragment",	oAuthServMsgScriptPathFragment },
+	{ "natport", oDefault },
 	{ "pingscriptpathfragment",	oAuthServPingScriptPathFragment },
 	{ "authscriptpathfragment",	oAuthServAuthScriptPathFragment },
 	{ "firewallruleset",		oFirewallRuleSet },
@@ -176,6 +183,8 @@ config_init(void)
 	config.httpdusername = NULL;
 	config.httpdpassword = NULL;
 	config.clienttimeout = DEFAULT_CLIENTTIMEOUT;
+    config.clientbandwidthup = DEFAULT_CLIENTBW;
+    config.clientbandwidthdown = DEFAULT_CLIENTBW;
 	config.checkinterval = DEFAULT_CHECKINTERVAL;
 	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
 	config.daemon = -1;
@@ -744,6 +753,12 @@ config_read(const char *filename)
 				case oClientTimeout:
 					sscanf(p1, "%d", &config.clienttimeout);
 					break;
+				case oClientBandwidthUp:
+					sscanf(p1, "%d", &config.clientbandwidthup);
+					break;
+				case oClientBandwidthDown:
+					sscanf(p1, "%d", &config.clientbandwidthdown);
+					break;
 				case oSyslogFacility:
 					sscanf(p1, "%d", &config.syslog_facility);
 					break;
@@ -752,6 +767,9 @@ config_read(const char *filename)
 					break;
 				case oProxyPort:
 					sscanf(p1, "%d", &config.proxy_port);
+					break;
+				case oDefault:
+					debug(LOG_INFO, "Unuse Var");
 					break;
 
 				}
@@ -864,6 +882,11 @@ get_auth_server(void)
 {
 
 	/* This is as good as atomic */
+	t_auth_serv *auth_server = NULL;
+	for (auth_server = config.auth_servers; auth_server; auth_server = auth_server->next) {
+		if(auth_server -> inuse == 1)
+			return auth_server;
+	}
 	return config.auth_servers;
 }
 
@@ -874,17 +897,12 @@ get_auth_server(void)
 void
 mark_auth_server_bad(t_auth_serv *bad_server)
 {
-	t_auth_serv	*tmp;
+	bad_server->inuse = 0;
+}
 
-	if (config.auth_servers == bad_server && bad_server->next != NULL) {
-		/* Go to the last */
-		for (tmp = config.auth_servers; tmp->next != NULL; tmp = tmp->next);
-		/* Set bad server as last */
-		tmp->next = bad_server;
-		/* Remove bad server from start of list */
-		config.auth_servers = bad_server->next;
-		/* Set the next pointe to NULL in the last element */
-		bad_server->next = NULL;
-	}
-
+long ktime()
+{
+	struct sysinfo info;
+	sysinfo(&info);
+	return info.uptime;
 }

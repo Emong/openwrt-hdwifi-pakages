@@ -51,6 +51,7 @@
 #define DEFAULT_GATEWAYPORT 2060
 #define DEFAULT_HTTPDNAME "WiFiDog"
 #define DEFAULT_CLIENTTIMEOUT 5
+#define DEFAULT_CLIENTBW 1000
 #define DEFAULT_CHECKINTERVAL 60
 #define DEFAULT_LOG_SYSLOG 0
 #define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
@@ -86,6 +87,7 @@ typedef struct _auth_serv_t {
 				     listens on */
     int authserv_use_ssl;	/**< @brief Use SSL or not */
     char *last_ip;	/**< @brief Last ip used by authserver */
+    int inuse;
     struct _auth_serv_t *next;
 } t_auth_serv;
 
@@ -157,6 +159,8 @@ typedef struct {
     char *httpdpassword;	/**< @brief Password for HTTP authentication */
     int clienttimeout;		/**< @brief How many CheckIntervals before a client
 				     must be re-authenticated */
+    int clientbandwidthup;
+    int clientbandwidthdown;
     int checkinterval;		/**< @brief Frequency the the client timeout check
 				     thread will run. */
     int log_syslog;		/**< @brief boolean, wether to log to syslog */
@@ -193,6 +197,7 @@ t_firewall_rule *get_ruleset(const char *);
 
 void parse_trusted_mac_list(const char *);
 
+long ktime();
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \
 	pthread_mutex_lock(&config_mutex); \
