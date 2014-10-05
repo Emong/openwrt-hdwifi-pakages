@@ -2,9 +2,9 @@
 while true
 do
 	[ ! -e /tmp/dog-startat ] && cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
-	[ $(ps |grep wifidog |wc -l) -lt 2 ] &&
+	[ -z "$(pidof wifidog)" ] &&
 	{
-		echo "No dog !start it"
+		logger -t check_dog No dog !start it
 		wifidog
 		cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
 	}

@@ -1,3 +1,4 @@
+#!/bin/sh
 . /lib/ralink.sh
 board=$(ralink_board_name)
 wifi_auth_only() {

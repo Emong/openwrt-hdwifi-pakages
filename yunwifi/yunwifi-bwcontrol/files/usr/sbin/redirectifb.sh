@@ -1,3 +1,7 @@
+#!/bin/sh
+# Copyright (C) 2014 Emong
+# http://blog.emong.me
+
 DEVICE=$1
 [ "$DEVICE" = "" ] && {
 	echo "Use:"

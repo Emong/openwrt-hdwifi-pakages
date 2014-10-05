@@ -1,3 +1,5 @@
 config yunwifi config
-        option hostname 'www.hdwifi.cn'
-        option authtype '1'
+	option hostname 'www.hdwifi.cn'
+	option authtype '1'
+	option dmz_mask '0001'
+	

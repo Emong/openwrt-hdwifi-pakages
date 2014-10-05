@@ -1,3 +1,4 @@
+#!/bin/sh
 local internet_led=internet
 internet_up() {
 	local wan_if=$(ip ro |grep default |awk -F 'dev' '{print $2}' |awk '{print $1}')
@@ -26,7 +27,9 @@ set_state() {
 check_wan() {
 	local last_state=$(get_state)
 #	echo $last_state
+	local internet_on=0
 	ping -w 2 -c 1 114.114.114.114 >/dev/null 2>&1
+	[ "$?" != "0" ] && ping -w 2 -c 1 223.5.5.5 >/dev/null 2>&1
 	if [ $? -eq 0 ]
 	then
 		[ "$last_state" != "1" ] && {

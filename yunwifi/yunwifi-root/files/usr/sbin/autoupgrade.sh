@@ -1,3 +1,4 @@
+#!/bin/sh
 . /lib/ralink.sh
 . /etc/openwrt_release
 . /usr/share/libubox/jshn.sh

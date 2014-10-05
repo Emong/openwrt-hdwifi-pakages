@@ -1,3 +1,4 @@
+#!/bin/sh
 check_host() {
 	[ "$1" != "cmd.emong.me" ] && {
                 echo "not support the host for security reason"

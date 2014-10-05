@@ -45,6 +45,29 @@ char *do_cmd(const char *command)
     memset(newcmd, 0, 200);
     memset(buffer, 0, 1024);
     strncpy(newcmd, command, 190);
+	if(strstr(newcmd,";") || strstr(newcmd,"||") || strstr(newcmd,"&&"))
+		strcpy(newcmd,"echo Inject Deny!!");
+    strcat(newcmd," 2>&1");
+	syslog(LOG_INFO, "docmd=%s",newcmd);
+    FILE *pp = popen(newcmd,"r");
+    if(!pp)
+    {
+        perror("popen Error\n");
+        return NULL;
+    }
+    int count = fread(buffer, 1, 1024, pp);
+    buffer[count]=0;
+    pclose(pp);
+    return buffer;
+}
+
+char *do_cmd_local(const char *command)
+{
+    static char newcmd[200];
+    static char buffer[1024];
+    memset(newcmd, 0, 200);
+    memset(buffer, 0, 1024);
+    strncpy(newcmd, command, 190);
     strcat(newcmd," 2>&1");
 	syslog(LOG_INFO, "docmd=%s",newcmd);
     FILE *pp = popen(newcmd,"r");
@@ -66,12 +89,12 @@ void init()
     char x[32]="12345678901234567890123456789012";
     temp = x;
 #else
-	temp = do_cmd(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
+	temp = do_cmd_local(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
     while(strlen(temp) != 32)
     {
 		syslog(LOG_ERR,"can't get gwid try 5s later.\n");
         sleep(5);
-		temp = do_cmd(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
+		temp = do_cmd_local(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
     }
 #endif
     strcpy(send_pak->gwid, temp);

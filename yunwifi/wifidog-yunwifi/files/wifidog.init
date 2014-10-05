@@ -5,6 +5,7 @@ EXTRA_COMMANDS="status"
 EXTRA_HELP="        status Print the status of the service"
 
 start() {
+    mkdir -p /tmp/wifidog
     /usr/sbin/setifbroot.sh
 	/usr/sbin/get_wifidog_conf.sh &
 }

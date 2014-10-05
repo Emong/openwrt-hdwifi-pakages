@@ -1,3 +1,4 @@
+#!/bin/sh
 . /etc/openwrt_release
 . /usr/share/libubox/jshn.sh
 . /etc/openwrt_release
@@ -83,7 +84,7 @@ get_conf(){
 		is_wifidog_conf=$(cat /tmp/wifidog.conf |grep GatewayID)
         [ "$is_wifidog_conf" != "" -a "$newdog_md5" != "" -a "$olddog_md5" != "" -a "$newdog_md5" = "$olddog_md5" ] && {
                 logger "YUNWIFI:remote wifidog conf same ! do nothing!!"
-				[ $(ps |grep wifidog |grep -v get_wifidog_conf |wc -l) -lt 2 ] &&
+				[ -z "$(pidof wifidog)" ] &&
 				{
 					logger "No dog !start it"
 					wifidog

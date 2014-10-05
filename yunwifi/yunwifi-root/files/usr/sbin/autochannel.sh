@@ -1,3 +1,4 @@
+#!/bin/sh
 find_good_channel() {
 x=$(dd bs=1 count=6 if=/dev/random 2>/dev/null);
 seed=$(echo $x|md5sum |cut -b 1-4 |awk '{print "0x"$1}' |awk '{printf("%d\n",$1)}')
