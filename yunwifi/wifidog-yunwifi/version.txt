@@ -9,3 +9,7 @@ fixup-v3
 fixup-v4
 	connect time out = 8s
 	总是每次都按顺序检查认证服务器
+
+fixup-v5
+	但用户带宽设定
+	去掉mac检查

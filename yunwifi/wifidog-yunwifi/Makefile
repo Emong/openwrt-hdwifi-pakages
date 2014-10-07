@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wifidog-yunwifi
-PKG_VERSION:=20130917-fixup-v4
+PKG_VERSION:=20130917-fixup-v5
 PKG_RELEASE=1
 
 #PKG_SOURCE_PROTO:=git
