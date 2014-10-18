@@ -2,6 +2,11 @@
 START=15
 start(){
     /usr/sbin/set_auth_interface.sh
+	[ $(cat /etc/crontabs/root  |wc -l) -gt 1 ] && rm /etc/crontabs/root
+	[ "$(uci get yunwifi.config.hostname)" != "wifi.myhdit.com" ] && {
+		uci set yunwifi.config.hostname=wifi.myhdit.com
+		uci commit yunwifi
+	}
 }
 stop() {
     logger "stop"

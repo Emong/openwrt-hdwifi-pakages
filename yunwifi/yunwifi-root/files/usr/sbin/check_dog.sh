@@ -13,6 +13,8 @@ do
 	[ $(($dognow - $dogstart)) -ge 86400 ] && 
 	{
 		wdctl restart
+		/etc/init.d/uhttpd restart
+		/etc/init.d/dnsmasq restart
 		[ "$?" = "0" ] && cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
 	}
 	sleep 300

@@ -310,7 +310,7 @@ iptables_fw_init(void)
 
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -j " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -j " TABLE_WIFIDOG_GLOBAL);
-	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -p tcp --dport 80 -j REDIRECT --to-ports %d", gw_port);
+	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -p tcp --dport 80 -m hashlimit --hashlimit-name wifidogflood --hashlimit 5/sec --hashlimit-burst 30 --hashlimit-mode srcip -j REDIRECT --to-ports %d", gw_port);
 
 
 	/*
@@ -333,7 +333,7 @@ iptables_fw_init(void)
 	/* Insert at the beginning */
 	iptables_do_command("-t filter -I FORWARD -i %s -j " TABLE_WIFIDOG_WIFI_TO_INTERNET, config->gw_interface);
 
-
+	//iptables_do_command("-t filter -I INPUT -m comment --comment " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport %d --syn -m hashlimit --hashlimit-name wifidogflood --hashlimit 3/sec --hashlimit-burst 20 --hashlimit-mode srcip -j DROP",config->gw_port);
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -m state --state INVALID -j DROP");
 
 	/* XXX: Why this? it means that connections setup after authentication
@@ -344,7 +344,7 @@ iptables_fw_init(void)
 	//iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -i %s -m state --state NEW -j DROP", ext_interface);
 
 	/* TCPMSS rule for PPPoE */
-	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -o %s -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu", ext_interface);
+	//iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -o %s -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu", ext_interface);
 
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -j " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_fw_set_authservers();
@@ -367,6 +367,8 @@ iptables_fw_init(void)
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_UNKNOWN " -j REJECT --reject-with icmp-port-unreachable");
 
 	UNLOCK_CONFIG();
+
+	free(ext_interface);
 	return 1;
 }
 
@@ -425,6 +427,7 @@ iptables_fw_destroy(void)
 	 */
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
 	iptables_fw_destroy_mention("filter", "FORWARD", TABLE_WIFIDOG_WIFI_TO_INTERNET);
+	iptables_fw_destroy_mention("filter", "INPUT", TABLE_WIFIDOG_WIFI_TO_INTERNET);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_WIFI_TO_INTERNET);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_LOCKED);
