@@ -11,6 +11,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/udphd
   SECTION:=net
   CATEGORY:=Network
+  DEPENDS:=+autossh
   TITLE:=HDWIFI UDP CONTROL UTINITY
   #DESCRIPTION:=This variable is obsolete. use the Package/name/description define instead!
   URL:=http://www.hdwifi.cn/

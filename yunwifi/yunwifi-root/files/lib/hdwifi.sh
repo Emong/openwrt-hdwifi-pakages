@@ -5,6 +5,11 @@
 
 local PLAT=x86
 
+[ -f /lib/x86.sh ] && {
+	PLAT=x86
+	. /lib/x86.sh
+}
+
 [ -f /lib/ralink.sh ] && {
 	PLAT=ralink
 	. /lib/ralink.sh
