@@ -1,16 +1,11 @@
 #!/bin/sh
 . /etc/openwrt_release
 . /usr/share/libubox/jshn.sh
-. /etc/openwrt_release
-local board
+. /lib/hdwifi.sh
+local board=$(hdwifi_get_board)
 local yunwifi_str
 local domain=$(uci get yunwifi.config.hostname)
 
-get_lan_mac() {
-
-         [ -e /lib/ralink.sh ] && local lan_mac=$(cat /sys/class/net/eth2/address)
-         echo $lan_mac
-}
 set_yunwifi_str() {
 	[ -e /tmp/lock/yunwifi_str.lck ] && {
 		echo "has run!"
@@ -26,40 +21,26 @@ set_yunwifi_str() {
 	done
 	local str=$(cat /tmp/yunwifi_str.txt)
 	yunwifi_str=$(cat /tmp/yunwifi_str.txt)
-	local mac=$(get_lan_mac)
+	local mac=$(hdwifi_get_mac)
 	url="http://${domain}/yunwifi/wifi/confirmyunwifistr.action?gw_id=${str}&mac=${mac}&aptype="
-	[ -f /lib/ralink.sh ] && {
-		url=${url}$(ralink_board_name)
-		ralink_set_yunwifi_str $str
-		[ "$?" = "0" ] && {
+	url=${url}$(hdwifi_get_board)
+	hdwifi_set_str $yunwifi_str
+	[ "$?" = "0" ] && {
+		wget -qO /dev/null $url
+		while [ "$?" != "0" ]
+		do
+			sleep 5
 			wget -qO /dev/null $url
-			while [ "$?" != "0" ]
-			do
-				sleep 5
-				wget -qO /dev/null $url
-			done
-		}
+		done
 	}
 	rm /tmp/lock/yunwifi_str.lck
 }
 get_yunwifi_str() {
-	[ -f /lib/ralink.sh ] && {
-		. /lib/ralink.sh
-		board=$(ralink_board_name)
-		yunwifi_str=$(ralink_get_yunwifi_str)
-		[ "$?" != "0" ] && {
-			echo "not set yunwifi str get from server"
-			set_yunwifi_str
-		}
-	}
-	[ -f /lib/ar71xx.sh ] && {
-		. /lib/ar71xx.sh
-		board=$(ar71xx_board_name)
-		yunwifi_str=$(ar71xx_get_yunwifi_str)
-		[ "$?" != "0" ] && {
-			echo "not set yunwifi str get from server"
-			set_yunwifi_str
-		}
+
+	yunwifi_str=$(hdwifi_get_str)
+	[ "$?" != "0" ] && {
+		echo "not set yunwifi str get from server"
+		set_yunwifi_str
 	}
 }
 

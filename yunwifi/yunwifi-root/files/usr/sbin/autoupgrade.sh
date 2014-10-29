@@ -1,5 +1,5 @@
 #!/bin/sh
-. /lib/ralink.sh
+. /lib/hdwifi.sh
 . /etc/openwrt_release
 . /usr/share/libubox/jshn.sh
 
@@ -24,7 +24,7 @@ do_update() {
 }
 
 check_up(){
-        broad=$(ralink_board_name)
+        broad=$(hdwifi_get_board)
         uri="/yunwifi/wifi/getupdinfo.action"
         host="http://$(get_host_from_wifidog)"
         url="${host}${uri}?aptype=${broad}&currentversion=${DISTRIB_VERSION}"

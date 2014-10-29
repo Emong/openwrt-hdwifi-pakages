@@ -13,7 +13,7 @@ local PLAT=x86
 hdwifi_get_board() {
 	case "$PLAT" in
 	"x86")
-		echo x86
+		x86_board_name
 	;;
 	"ralink")
 		ralink_board_name
@@ -24,7 +24,7 @@ hdwifi_get_board() {
 hdwifi_get_str() {
 	case "$PLAT" in
 	"x86")
-		x86
+		x86_get_yunwifi_str $@
 	;;
 	"ralink")
 		ralink_set_yunwifi_str $@
@@ -34,7 +34,7 @@ hdwifi_get_str() {
 hdwifi_set_str() {
 	case "$PLAT" in
 	"x86")
-		 x86
+		 x86_set_yunwifi_str $@
 	;;
 	"ralink")
 		ralink_set_yunwifi_str $@
@@ -45,10 +45,20 @@ hdwifi_set_str() {
 hdwifi_clear_str() {
 	case "$PLAT" in
 	"x86")
-		x86
+		x86_clear_yunwifistr $@
 	;;
 	"ralink")
-		ralink_set_yunwifi_str $@
+		ralink_clear_yunwifistr $@
+	;;
+	esac
+}
+hdwifi_get_mac() {
+	case "$PLAT" in
+	"x86")
+		cat /sys/class/net/eth0/address
+	;;
+	"ralink")
+		cat /sys/class/net/eth2/address
 	;;
 	esac
 }

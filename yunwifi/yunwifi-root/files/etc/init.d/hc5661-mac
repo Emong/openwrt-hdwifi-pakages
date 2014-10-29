@@ -1,7 +1,12 @@
 #!/bin/sh /etc/rc.common
+. /lib/hdwifi.sh
+local board=$(hdwifi_get_board)
+
 START=11
 start(){
-    /usr/sbin/hc5661_mac.sh
+	[ "$board" == "hc5661"] && {
+    	/usr/sbin/hc5661_mac.sh
+	}
 }
 stop() {
     logger "stop"

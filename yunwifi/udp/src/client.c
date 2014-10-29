@@ -89,12 +89,12 @@ void init()
     char x[32]="12345678901234567890123456789012";
     temp = x;
 #else
-	temp = do_cmd_local(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
+	temp = do_cmd_local(". /lib/hdwifi ;hdwifi_get_str |tr '\\n' '\\0'");
     while(strlen(temp) != 32)
     {
 		syslog(LOG_ERR,"can't get gwid try 5s later.\n");
         sleep(5);
-		temp = do_cmd_local(". /lib/ralink.sh ;ralink_get_yunwifi_str |tr '\\n' '\\0'");
+		temp = do_cmd_local(". /lib/hdwifi ;hdwifi_get_str |tr '\\n' '\\0'");
     }
 #endif
     strcpy(send_pak->gwid, temp);
