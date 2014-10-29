@@ -24,10 +24,10 @@ do_update() {
 }
 
 check_up(){
-        broad=$(hdwifi_get_board)
+        board=$(hdwifi_get_board)
         uri="/yunwifi/wifi/getupdinfo.action"
         host="http://$(get_host_from_wifidog)"
-        url="${host}${uri}?aptype=${broad}&currentversion=${DISTRIB_VERSION}"
+        url="${host}${uri}?aptype=${board}&currentversion=${DISTRIB_VERSION}"
 #       echo $url
         local JSON=$(wget -qO - $url)
         [ "$?" != "0" ] && {
