@@ -256,6 +256,15 @@ iptables_fw_init(void)
 		debug(LOG_ERR, "FATAL: no external interface");
 		return 0;
 	}
+
+	/*
+	 *
+	 * bandwidth clear
+	 *
+	 */
+	do_cmd("/usr/sbin/setifbroot.sh");
+
+
 	/*
 	 *
 	 * Everything in the MANGLE table
@@ -310,7 +319,8 @@ iptables_fw_init(void)
 
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -j " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -j " TABLE_WIFIDOG_GLOBAL);
-	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -p tcp --dport 80 -m hashlimit --hashlimit-name wifidogflood --hashlimit 5/sec --hashlimit-burst 30 --hashlimit-mode srcip -j REDIRECT --to-ports %d", gw_port);
+	iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -p tcp --dport 80 -j REDIRECT --to-ports %d", gw_port);
+	//iptables_do_command("-t nat -A " TABLE_WIFIDOG_UNKNOWN " -p tcp --dport 80 -m hashlimit --hashlimit-name wifidogflood --hashlimit 5/sec --hashlimit-burst 30 --hashlimit-mode srcip -j REDIRECT --to-ports %d", gw_port);
 
 
 	/*
@@ -327,11 +337,14 @@ iptables_fw_init(void)
 	iptables_do_command("-t filter -N " TABLE_WIFIDOG_VALIDATE);
 	iptables_do_command("-t filter -N " TABLE_WIFIDOG_KNOWN);
 	iptables_do_command("-t filter -N " TABLE_WIFIDOG_UNKNOWN);
+	iptables_do_command("-t filter -N " TABLE_WIFIDOG_INPUT_DDOS);
 
 	/* Assign links and rules to these new chains */
 
 	/* Insert at the beginning */
 	iptables_do_command("-t filter -I FORWARD -i %s -j " TABLE_WIFIDOG_WIFI_TO_INTERNET, config->gw_interface);
+	iptables_do_command("-t filter -I INPUT -i %s -p tcp --dport %d -j " TABLE_WIFIDOG_INPUT_DDOS, config->gw_interface,gw_port);
+
 
 	//iptables_do_command("-t filter -I INPUT -m comment --comment " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport %d --syn -m hashlimit --hashlimit-name wifidogflood --hashlimit 3/sec --hashlimit-burst 20 --hashlimit-mode srcip -j DROP",config->gw_port);
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -m state --state INVALID -j DROP");
@@ -365,6 +378,11 @@ iptables_fw_init(void)
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -j " TABLE_WIFIDOG_UNKNOWN);
 	iptables_load_ruleset("filter", "unknown-users", TABLE_WIFIDOG_UNKNOWN);
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_UNKNOWN " -j REJECT --reject-with icmp-port-unreachable");
+
+	iptables_do_command("-t filter -A " TABLE_WIFIDOG_INPUT_DDOS " -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT");
+	iptables_do_command("-t filter -A " TABLE_WIFIDOG_INPUT_DDOS " -p tcp --tcp-flags FIN,SYN,RST,ACK SYN -m hashlimit --hashlimit-name wifidogflood --hashlimit 5/sec --hashlimit-burst 30 --hashlimit-mode srcip -j ACCEPT");
+	iptables_do_command("-t filter -A " TABLE_WIFIDOG_INPUT_DDOS " -j REJECT");
+
 
 	UNLOCK_CONFIG();
 
@@ -427,7 +445,7 @@ iptables_fw_destroy(void)
 	 */
 	debug(LOG_DEBUG, "Destroying chains in the FILTER table");
 	iptables_fw_destroy_mention("filter", "FORWARD", TABLE_WIFIDOG_WIFI_TO_INTERNET);
-	iptables_fw_destroy_mention("filter", "INPUT", TABLE_WIFIDOG_WIFI_TO_INTERNET);
+	iptables_fw_destroy_mention("filter", "INPUT", TABLE_WIFIDOG_INPUT_DDOS);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_WIFI_TO_INTERNET);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_LOCKED);
@@ -435,6 +453,7 @@ iptables_fw_destroy(void)
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_VALIDATE);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_KNOWN);
 	iptables_do_command("-t filter -F " TABLE_WIFIDOG_UNKNOWN);
+	iptables_do_command("-t filter -F " TABLE_WIFIDOG_INPUT_DDOS);
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_WIFI_TO_INTERNET);
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_LOCKED);
@@ -442,6 +461,14 @@ iptables_fw_destroy(void)
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_VALIDATE);
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_KNOWN);
 	iptables_do_command("-t filter -X " TABLE_WIFIDOG_UNKNOWN);
+	iptables_do_command("-t filter -X " TABLE_WIFIDOG_INPUT_DDOS);
+
+	/*
+	 *
+	 * bandwidth clear
+	 *
+	 */
+	do_cmd("/usr/sbin/setifbroot.sh");
 
 	return 1;
 }
@@ -530,7 +557,7 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 		case FW_ACCESS_DENY:
 			iptables_do_command("-t mangle -D " TABLE_WIFIDOG_OUTGOING " -s %s -j MARK --set-mark %d", ip, tag);
 			rc = iptables_do_command("-t mangle -D " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
-            //do_cmd("/usr/sbin/delclientbw.sh %s",ip);
+            do_cmd("/usr/sbin/delclientbw.sh %s",ip);
 			break;
 		default:
 			rc = -1;
