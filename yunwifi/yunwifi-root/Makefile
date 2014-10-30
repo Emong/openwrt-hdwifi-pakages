@@ -18,7 +18,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/yunwifi-root
   SECTION:=utils
   CATEGORY:=Base system
-  DEPENDS:=+base-files +ipset
+  DEPENDS:=+base-files +ipset +kmod-ipt-nathelper +kmod-ipt-nathelper-extra +iptables-mod-nat-extra
   TITLE:=Yunwifi root
   PKGARCH:=all
 endef
