@@ -32,7 +32,7 @@ hdwifi_get_str() {
 		x86_get_yunwifi_str $@
 	;;
 	"ralink")
-		ralink_set_yunwifi_str $@
+		ralink_get_yunwifi_str $@
 	;;
 	esac
 }

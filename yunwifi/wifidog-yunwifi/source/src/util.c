@@ -449,19 +449,16 @@ get_ext_iface(void)
 	 * @return A string containing human-readable status text. MUST BE free()d by caller
 	 */
 	char * get_status_text() {
-		char buffer[STATUS_BUF_SIZ];
+		char *buffer;
 		ssize_t len;
 		s_config *config;
 		t_auth_serv *auth_server;
 		t_client	*first;
 		int		count;
+		unsigned int buffer_size;
 		unsigned long int uptime = 0;
 		unsigned int days = 0, hours = 0, minutes = 0, seconds = 0;
 		t_trusted_mac *p;
-
-		len = 0;
-		snprintf(buffer, (sizeof(buffer) - len), "WiFiDog status\n\n");
-		len = strlen(buffer);
 
 		uptime = ktime() - started_time;
 		days    = uptime / (24 * 60 * 60);
@@ -472,34 +469,8 @@ get_ext_iface(void)
 		uptime -= minutes * 60;
 		seconds = uptime;
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "Version: " VERSION "\n");
-		len = strlen(buffer);
-
-		snprintf((buffer + len), (sizeof(buffer) - len), "Uptime: %ud %uh %um %us\n", days, hours, minutes, seconds);
-		len = strlen(buffer);
-
-		snprintf((buffer + len), (sizeof(buffer) - len), "Has been restarted: ");
-		len = strlen(buffer);
-		if (restart_orig_pid) {
-			snprintf((buffer + len), (sizeof(buffer) - len), "yes (from PID %d)\n", restart_orig_pid);
-			len = strlen(buffer);
-		}
-		else {
-			snprintf((buffer + len), (sizeof(buffer) - len), "no\n");
-			len = strlen(buffer);
-		}
-
-		snprintf((buffer + len), (sizeof(buffer) - len), "Internet Connectivity: %s\n", (is_online() ? "yes" : "no"));
-		len = strlen(buffer);
-
-		snprintf((buffer + len), (sizeof(buffer) - len), "Auth server reachable: %s\n", (is_auth_online() ? "yes" : "no"));
-		len = strlen(buffer);
-
-		snprintf((buffer + len), (sizeof(buffer) - len), "Clients served this session: %lu\n\n", served_this_session);
-		len = strlen(buffer);
-
 		LOCK_CLIENT_LIST();
-
+		//count clients nums
 		first = client_get_first_client();
 
 		if (first == NULL) {
@@ -511,25 +482,55 @@ get_ext_iface(void)
 				count++;
 			}
 		}
+		buffer_size = 1024 + (160 * count);
+		buffer=(char *)safe_malloc(buffer_size);
+		len = 0;
+		snprintf(buffer, (buffer_size - len), "WiFiDog status\n\n");
+		len = strlen(buffer);
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "%d clients "
-				"connected.\n", count);
+		snprintf((buffer + len), (buffer_size - len), "Version: " VERSION "\n");
+		len = strlen(buffer);
+
+		snprintf((buffer + len), (buffer_size - len), "Uptime: %ud %uh %um %us\n", days, hours, minutes, seconds);
+		len = strlen(buffer);
+
+		snprintf((buffer + len), (buffer_size - len), "Has been restarted: ");
+		len = strlen(buffer);
+		if (restart_orig_pid) {
+			snprintf((buffer + len), (buffer_size - len), "yes (from PID %d)\n", restart_orig_pid);
+			len = strlen(buffer);
+		}
+		else {
+			snprintf((buffer + len), (buffer_size - len), "no\n");
+			len = strlen(buffer);
+		}
+
+		snprintf((buffer + len), (buffer_size - len), "Internet Connectivity: %s\n", (is_online() ? "yes" : "no"));
+		len = strlen(buffer);
+
+		snprintf((buffer + len), (buffer_size - len), "Auth server reachable: %s\n", (is_auth_online() ? "yes" : "no"));
+		len = strlen(buffer);
+
+		snprintf((buffer + len), (buffer_size - len), "Clients served this session: %lu\n\n", served_this_session);
+		len = strlen(buffer);
+
+		snprintf((buffer + len), (buffer_size - len), "%d clients connected.\n", count);
 		len = strlen(buffer);
 
 		first = client_get_first_client();
 
 		count = 0;
 		while (first != NULL) {
-			snprintf((buffer + len), (sizeof(buffer) - len), "\nClient %d\n", count);
+			snprintf((buffer + len), (buffer_size - len), "\nClient %d\n", count);
 			len = strlen(buffer);
 
-			snprintf((buffer + len), (sizeof(buffer) - len), "  IP: %s MAC: %s\n", first->ip, first->mac);
+			snprintf((buffer + len), (buffer_size - len), "  IP: %s MAC: %s\n", first->ip, first->mac);
 			len = strlen(buffer);
 
-			snprintf((buffer + len), (sizeof(buffer) - len), "  Token: %s\n", first->token);
+			snprintf((buffer + len), (buffer_size - len), "  Token: %s\n", first->token);
 			len = strlen(buffer);
 
-			snprintf((buffer + len), (sizeof(buffer) - len), "  Downloaded: %llu\n  Uploaded: %llu\n" , first->counters.incoming, first->counters.outgoing);
+			snprintf((buffer + len), (buffer_size - len), "  Downloaded: %llu\n  Uploaded: %llu\n" , first->counters.incoming, first->counters.outgoing);
 			len = strlen(buffer);
 
 			count++;
@@ -541,26 +542,26 @@ get_ext_iface(void)
 		config = config_get_config();
 
 		if (config->trustedmaclist != NULL) {
-			snprintf((buffer + len), (sizeof(buffer) - len), "\nTrusted MAC addresses:\n");
+			snprintf((buffer + len), (buffer_size - len), "\nTrusted MAC addresses:\n");
 			len = strlen(buffer);
 
 			for (p = config->trustedmaclist; p != NULL; p = p->next) {
-				snprintf((buffer + len), (sizeof(buffer) - len), "  %s\n", p->mac);
+				snprintf((buffer + len), (buffer_size - len), "  %s\n", p->mac);
 				len = strlen(buffer);
 			}
 		}
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "\nAuthentication servers:\n");
+		snprintf((buffer + len), (buffer_size - len), "\nAuthentication servers:\n");
 		len = strlen(buffer);
 
 		LOCK_CONFIG();
 
 		for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next) {
-			snprintf((buffer + len), (sizeof(buffer) - len), "  Host: %s (%s)\n", auth_server->authserv_hostname, auth_server->last_ip);
+			snprintf((buffer + len), (buffer_size - len), "  Host: %s (%s)\n", auth_server->authserv_hostname, auth_server->last_ip);
 			len = strlen(buffer);
 		}
 
 		UNLOCK_CONFIG();
 
-		return safe_strdup(buffer);
+		return buffer;
 	}
