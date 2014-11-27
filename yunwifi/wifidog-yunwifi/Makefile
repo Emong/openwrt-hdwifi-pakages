@@ -26,7 +26,7 @@ define Package/wifidog-yunwifi
   SUBMENU:=Captive Portals
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+iptables-mod-extra +iptables-mod-ipopt +iptables-mod-nat-extra +libpthread +yunwifi-bwcontrol
+  DEPENDS:=+iptables-mod-extra +iptables-mod-ipopt +iptables-mod-nat-extra +libpthread +yunwifi-bwcontrol +iptables-mod-hashlimit
   TITLE:=A wireless captive portal solution
   URL:=http://www.wifidog.org
 endef
