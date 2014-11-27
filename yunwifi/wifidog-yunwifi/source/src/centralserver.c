@@ -64,7 +64,7 @@ int in_connect_auth_server(t_auth_serv *server) {
 		++level;
 	}
 	LOCK_CONFIG();
-	sockfd = _connect_auth_server(level);
+	sockfd = _connect_auth_server(level,0);
 	UNLOCK_CONFIG();
 
 	if (sockfd == -1) {
@@ -231,7 +231,7 @@ int connect_auth_server() {
 	int sockfd;
 
 	LOCK_CONFIG();
-	sockfd = _connect_auth_server(0);
+	sockfd = _connect_auth_server(0,0);
 	UNLOCK_CONFIG();
 
 	if (sockfd == -1) {
@@ -245,11 +245,30 @@ int connect_auth_server() {
 	return (sockfd);
 }
 
+int connect_central_server() {
+	int sockfd;
+
+	LOCK_CONFIG();
+	sockfd = _connect_auth_server(0,1);
+	UNLOCK_CONFIG();
+
+	if (sockfd == -1) {
+		debug(LOG_ERR, "Failed to connect to any of the auth servers");
+		mark_auth_offline();
+	}
+	else {
+		debug(LOG_DEBUG, "Connected to auth server");
+		mark_auth_online();
+	}
+	return (sockfd);
+}
+
+
 /* Helper function called by connect_auth_server() to do the actual work including recursion
  * DO NOT CALL DIRECTLY
  @param level recursion level indicator must be 0 when not called by _connect_auth_server()
  */
-int _connect_auth_server(int level) {
+int _connect_auth_server(int level,int type) {
 	s_config *config = config_get_config();
 	t_auth_serv *auth_server = NULL;
 	struct in_addr *h_addr;
@@ -295,7 +314,10 @@ int _connect_auth_server(int level) {
 		auth_server = auth_server->next;
 		++auth_i;
 	}
-	hostname = auth_server->authserv_hostname;
+	if(type==0)
+		hostname = auth_server->authserv_hostname;
+	else 
+		hostname = auth_server->central_server;
 	debug(LOG_DEBUG, "Level %d: Resolving auth server [%s]", level, hostname);
 	h_addr = wd_gethostbyname(hostname);
 	if (!h_addr) {
@@ -336,7 +358,7 @@ int _connect_auth_server(int level) {
 				auth_server->last_ip = NULL;
 			}
 			mark_auth_server_bad(auth_server);
-			return _connect_auth_server(level);
+			return _connect_auth_server(level,type);
 		}
 		else {
 			/*
@@ -404,7 +426,7 @@ int _connect_auth_server(int level) {
 			debug(LOG_DEBUG, "Level %d: Failed to connect to auth server %s:%d (%s). Marking it as bad and trying next if possible", level, hostname, auth_server->authserv_http_port, strerror(errno));
 			close(sockfd);
 			mark_auth_server_bad(auth_server);
-			return _connect_auth_server(level); /* Yay recursion! */
+			return _connect_auth_server(level,type); /* Yay recursion! */
 		}
 		else {
 			/*

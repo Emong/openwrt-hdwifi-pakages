@@ -47,14 +47,17 @@
 #include "safe.h"
 #include "common.h"
 #include "conf.h"
+#include "client_list.h"
 #include "debug.h"
 #include "ping_thread.h"
 #include "util.h"
 #include "centralserver.h"
 
 static void ping(void);
+static void update_counters(void);
 
 extern time_t started_time;
+extern pthread_mutex_t client_list_mutex;
 
 /** Launches a thread that periodically checks in with the wifidog auth server to perform heartbeat function.
 @param arg NULL
@@ -71,6 +74,8 @@ thread_ping(void *arg)
 		/* Make sure we check the servers at the very begining */
 		debug(LOG_DEBUG, "Running ping()");
 		ping();
+		debug(LOG_DEBUG, "Running update_counters");
+		update_counters();
 		
 		/* Sleep for config.checkinterval seconds... */
 		timeout.tv_sec = time(NULL) + config_get_config()->checkinterval;
@@ -232,5 +237,150 @@ ping(void)
 		debug(LOG_DEBUG, "Auth Server Says: Pong");
 	}
 
+	return;	
+}
+
+static void update_counters(void)
+{
+	ssize_t			numbytes;
+    size_t	        	totalbytes;
+	int client_size;
+	int			sockfd, nfds, done;
+	int request_size;
+	int len;
+	char			*request;
+	fd_set			readfds;
+	struct timeval		timeout;
+	t_auth_serv	*auth_server = NULL;
+	t_client	*first=NULL;
+
+	auth_server = get_auth_server();
+	
+	debug(LOG_DEBUG, "Entering update_counters()");
+
+	LOCK_CLIENT_LIST();
+	first = client_get_first_client();
+	if (first == NULL) {
+		UNLOCK_CLIENT_LIST();
+		return ;
+	} 
+	else {
+		client_size = 1;
+		while (first->next != NULL) {
+			first = first->next;
+			client_size++;
+		}
+	}
+	request_size = 170*client_size + 1024;
+	if(request_size < MAX_BUF)
+		request_size = MAX_BUF;
+	debug(LOG_DEBUG, "malloc %d bytes",request_size);
+	request = (char *)safe_malloc(request_size);
+	/*
+	 * Prep & send request
+	 */
+	debug(LOG_DEBUG, "malloc done");
+	snprintf(request, request_size - 1,
+		"POST %s%sstage=%s&gw_id=%s HTTP/1.0\r\n"
+		"User-Agent: WiFiDog %s\r\n"
+		"Host: %s\r\n"
+		"\r\n"
+		"clientsjson={\"clientlist\":[",
+		auth_server->authserv_path,
+		auth_server->authserv_auth_script_path_fragment,
+		REQUEST_TYPE_COUNTERS,
+        config_get_config()->gw_id,
+		VERSION,
+		auth_server->central_server);
+	first = client_get_first_client();
+	debug(LOG_DEBUG, "find first[%d]!",first);
+	while (first != NULL) {
+		len = strlen(request);
+		debug(LOG_DEBUG, "node[%d]->token:%s!",first,first->token);
+		snprintf(request + len,request_size - len - 1,
+			"{\"token\":\"%s\",\"mac\":\"%s\",\"ip\":\"%s\",\"up\":\"%llu\",\"down\":\"%llu\",\"logintime\":\"%lu\"},",
+			first->token,
+			first->mac,
+			first->ip,
+			first->counters.outgoing,
+			first->counters.incoming,
+			first->login_time);
+		first = first->next;
+	}
+	len = strlen(request);
+	snprintf(request + len - 1,request_size - len,
+		"]}");
+	UNLOCK_CLIENT_LIST();
+
+
+	sockfd = connect_central_server();
+	if (sockfd == -1) {
+		/*
+		 * No servers for me to talk to
+		 */
+		free(request);
+		return;
+	}
+
+	debug(LOG_DEBUG, "HTTP Request to Server: [%s]", request);
+	
+	send(sockfd, request, strlen(request), 0);
+
+	debug(LOG_DEBUG, "Reading response");
+	
+	numbytes = totalbytes = 0;
+	done = 0;
+	do {
+		FD_ZERO(&readfds);
+		FD_SET(sockfd, &readfds);
+		timeout.tv_sec = 30; /* XXX magic... 30 second */
+		timeout.tv_usec = 0;
+		nfds = sockfd + 1;
+
+		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
+
+		if (nfds > 0) {
+			/** We don't have to use FD_ISSET() because there
+			 *  was only one fd. */
+			numbytes = read(sockfd, request + totalbytes, MAX_BUF - (totalbytes + 1));
+			if (numbytes < 0) {
+				debug(LOG_ERR, "An error occurred while reading from auth server: %s", strerror(errno));
+				/* FIXME */
+				close(sockfd);
+				free(request);
+				return;
+			}
+			else if (numbytes == 0) {
+				done = 1;
+			}
+			else {
+				totalbytes += numbytes;
+				debug(LOG_DEBUG, "Read %d bytes, total now %d", numbytes, totalbytes);
+			}
+		}
+		else if (nfds == 0) {
+			debug(LOG_ERR, "Timed out reading data via select() from central server");
+			/* FIXME */
+			close(sockfd);
+			free(request);
+			return;
+		}
+		else if (nfds < 0) {
+			debug(LOG_ERR, "Error reading data via select() from central server: %s", strerror(errno));
+			/* FIXME */
+			close(sockfd);
+			free(request);
+			return;
+		}
+	} while (!done);
+	close(sockfd);
+
+	debug(LOG_DEBUG, "Done reading reply, total %d bytes", totalbytes);
+
+	request[totalbytes] = '\0';
+
+	debug(LOG_DEBUG, "HTTP Response from Server: [%s]", request);
+	
+	free(request);
 	return;	
 }

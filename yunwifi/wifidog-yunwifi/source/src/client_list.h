@@ -51,6 +51,7 @@ typedef struct	_t_client {
 					     _http_* function is called */
 	t_counters	counters;	/**< @brief Counters for input/output of
 					     the client. */
+	time_t login_time; //login timestamp
 } t_client;
 
 /** @brief Get the first element of the list of connected clients

@@ -73,6 +73,7 @@ typedef enum {
 	oGatewayAddress,
 	oGatewayPort,
 	oAuthServer,
+	oCentralServer,
 	oAuthServHostname,
 	oAuthServSSLAvailable,
 	oAuthServSSLPort,
@@ -116,6 +117,7 @@ static const struct {
 	{ "gatewayaddress",     	oGatewayAddress },
 	{ "gatewayport",        	oGatewayPort },
 	{ "authserver",         	oAuthServer },
+	{ "centralserver",			oCentralServer},
 	{ "httpdmaxconn",       	oHTTPDMaxConn },
 	{ "httpdname",          	oHTTPDName },
 	{ "httpdrealm",			oHTTPDRealm },
@@ -229,6 +231,7 @@ static void
 parse_auth_server(FILE *file, const char *filename, int *linenum)
 {
 	char		*host = NULL,
+			*centralserver = NULL,
 			*path = NULL,
 			*loginscriptpathfragment = NULL,
 			*portalscriptpathfragment = NULL,
@@ -292,6 +295,9 @@ parse_auth_server(FILE *file, const char *filename, int *linenum)
 			opcode = config_parse_token(p1, filename, *linenum);
 			
 			switch (opcode) {
+				case oCentralServer:
+					centralserver = safe_strdup(p2);
+					break;
 				case oAuthServHostname:
 					host = safe_strdup(p2);
 					break;
@@ -351,9 +357,14 @@ parse_auth_server(FILE *file, const char *filename, int *linenum)
 
 	/* Allocate memory */
 	new = safe_malloc(sizeof(t_auth_serv));
+
+	/*for not define central server*/
+	if(centralserver == NULL)
+		centralserver = host;
 	
 	/* Fill in struct */
 	memset(new, 0, sizeof(t_auth_serv)); /*< Fill all with NULL */
+	new->central_server = centralserver;
 	new->authserv_hostname = host;
 	new->authserv_use_ssl = ssl_available;
 	new->authserv_path = path;

@@ -74,6 +74,7 @@
  * Information about the authentication server
  */
 typedef struct _auth_serv_t {
+    char *central_server;
     char *authserv_hostname;	/**< @brief Hostname of the central server */
     char *authserv_path;	/**< @brief Path where wifidog resides */
     char *authserv_login_script_path_fragment;	/**< @brief This is the script the user will be sent to for login. */

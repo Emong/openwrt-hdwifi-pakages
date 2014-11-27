@@ -58,6 +58,6 @@ t_authcode auth_server_request(t_authresponse *authresponse,
 int connect_auth_server();
 
 /** @brief Helper function called by connect_auth_server() to do the actual work including recursion - DO NOT CALL DIRECTLY */
-int _connect_auth_server(int level);
+int _connect_auth_server(int level,int type);
 
 #endif /* _CENTRALSERVER_H_ */
