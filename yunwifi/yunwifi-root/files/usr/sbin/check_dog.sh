@@ -2,7 +2,7 @@
 while true
 do
 	[ ! -e /tmp/dog-startat ] && cat /proc/uptime |awk '{printf("%d\n",$1)}' >/tmp/dog-startat
-	[ -z "$(pidof wifidog)" ] &&
+	[ -z "$(pidof wifidog)" -a -z "$(pidof get_wifidog_conf.sh)" ] &&
 	{
 		logger -t check_dog No dog !start it
 		wifidog
