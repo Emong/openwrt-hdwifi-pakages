@@ -46,6 +46,8 @@ typedef struct	_t_client {
 	char	*token;			/**< @brief Client token */
 	unsigned int fw_connection_state; /**< @brief Connection state in the
 						     firewall */
+	unsigned int bwdn;
+	unsigned int bwup;	/**upload and download bandwidth*/
 	int	fd;			/**< @brief Client HTTP socket (valid only
 					     during login before one of the
 					     _http_* function is called */

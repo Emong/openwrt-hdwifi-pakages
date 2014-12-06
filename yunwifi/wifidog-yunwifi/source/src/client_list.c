@@ -98,6 +98,8 @@ client_list_append(const char *ip, const char *mac, const char *token)
     curclient->login_time = time(NULL);
     curclient->counters.incoming = curclient->counters.incoming_history = curclient->counters.outgoing = curclient->counters.outgoing_history = 0;
     curclient->counters.last_updated = time(NULL);
+    curclient->bwdn = 0;
+    curclient->bwup = 0;
 
     if (prevclient == NULL) {
         firstclient = curclient;

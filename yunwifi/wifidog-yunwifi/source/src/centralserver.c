@@ -46,9 +46,11 @@
 #include "conf.h"
 #include "debug.h"
 #include "centralserver.h"
+#include "client_list.h"
 #include "firewall.h"
 #include "../config.h"
 
+extern pthread_mutex_t	client_list_mutex;
 extern pthread_mutex_t	config_mutex;
 
 /** in connect function emong added,for quickly find useable server
@@ -91,6 +93,7 @@ t_authcode
 auth_server_request(t_authresponse *authresponse, const char *request_type, const char *ip, const char *mac, const char *token, unsigned long long int incoming, unsigned long long int outgoing)
 {
 	int sockfd;
+	t_client *client;
 	ssize_t	numbytes;
 	size_t totalbytes;
 	char buf[MAX_BUF];
@@ -209,7 +212,15 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 					bwdn=config_get_config()->clientbandwidthdown;
 					bwup=config_get_config()->clientbandwidthup;
 				}
-				do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,bwdn,bwup);
+
+				LOCK_CLIENT_LIST();
+				client = client_list_find_by_ip(ip);
+				if (client != NULL) {
+					debug(LOG_DEBUG, "get bandwidth %d %d", bwdn,bwup);
+					client->bwdn = bwdn;
+					client->bwup = bwup;
+				}
+				UNLOCK_CLIENT_LIST();
 			}
 			return(authresponse->authcode);
 		} else {

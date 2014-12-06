@@ -540,6 +540,7 @@ iptables_fw_destroy_mention(
 iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 {
 	int rc;
+	t_client *client;
 
 	fw_quiet = 0;
 
@@ -551,7 +552,14 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 			{
 				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -j MARK --set-mark %d", ip, tag);
 				rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
-            	//do_cmd("/usr/sbin/setclientbw.sh %s %d %d",ip,config_get_config()->clientbandwidthdown,config_get_config()->clientbandwidthup);
+
+				//LOCK_CLIENT_LIST();
+				client = client_list_find_by_ip(ip);
+				if (client != NULL) {
+					debug(LOG_DEBUG, "set client bandwidth %u %u", client->bwdn,client->bwup);
+					do_cmd("/usr/sbin/setclientbw.sh %s %u %u",ip,client->bwdn,client->bwup);
+				}
+				//UNLOCK_CLIENT_LIST();
 			}
 			break;
 		case FW_ACCESS_DENY:
