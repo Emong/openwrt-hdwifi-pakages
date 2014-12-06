@@ -315,7 +315,7 @@ wdctl_restart(int afd)
 		client = client_get_first_client();
 		while (client) {
 			/* Send this client */
-			safe_asprintf(&tempstring, "CLIENT|ip=%s|mac=%s|token=%s|fw_connection_state=%u|fd=%d|counters_incoming=%llu|counters_outgoing=%llu|counters_last_updated=%lu\n", client->ip, client->mac, client->token, client->fw_connection_state, client->fd, client->counters.incoming, client->counters.outgoing, client->counters.last_updated);
+			safe_asprintf(&tempstring, "CLIENT|ip=%s|mac=%s|token=%s|bwdn=%u|bwup=%u|fw_connection_state=%u|fd=%d|counters_incoming=%llu|counters_outgoing=%llu|counters_last_updated=%lu\n", client->ip, client->mac, client->token, client->bwdn, client->bwup, client->fw_connection_state, client->fd, client->counters.incoming, client->counters.outgoing, client->counters.last_updated);
 			debug(LOG_DEBUG, "Sending to child client data: %s", tempstring);
 			len = 0;
 			while (len != strlen(tempstring)) {
@@ -409,4 +409,7 @@ wdctl_reset(int fd, const char *arg)
 		debug(LOG_CRIT, "Unable to write Yes: %s", strerror(errno));
 
 	debug(LOG_DEBUG, "Exiting wdctl_reset...");
+	free(ip);
+	free(token);
+	free(mac);
 }

@@ -208,6 +208,12 @@ void get_clients_from_parent(void) {
 						else if (strcmp(key, "counters_last_updated") == 0) {
 							client->counters.last_updated = atol(value);
 						}
+						else if (strcmp(key, "bwdn") == 0) {
+							client->bwdn=atoi(value);
+						}
+						else if (strcmp(key, "bwup") == 0) {
+							client->bwup=atoi(value);
+						}
 						else {
 							debug(LOG_NOTICE, "I don't know how to inherit key [%s] value [%s] from parent", key, value);
 						}
