@@ -47,6 +47,7 @@ update_with_dnsmasq(){
 			echo $domain | awk '{print "ipset=/" $0 "/WHITE"}' >>/tmp/etc/dnsmasq.d/hdwifi-white.conf                               
 		fi
 	done
+	dnsmasq --test || rm /tmp/etc/dnsmasq.d/hdwifi-white.conf
 	/etc/init.d/dnsmasq restart
 }
 case "$1" in
