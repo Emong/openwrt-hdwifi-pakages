@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 START=99
 start(){
-    whitelist.sh start
+	whitelist.sh start
 	/usr/sbin/check_dog.sh &
 }
 stop() {   

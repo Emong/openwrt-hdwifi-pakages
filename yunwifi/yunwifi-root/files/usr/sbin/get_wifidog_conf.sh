@@ -12,8 +12,8 @@ set_yunwifi_str() {
 		return 1
 	}
 	touch /tmp/lock/yunwifi_str.lck
-	local url="http://${domain}/yunwifi/wifi/getyunwifistr.action"
-	wget -qO /tmp/yunwifi_str.txt $url
+	local url="https://${domain}/yunwifi/wifi/getyunwifistr.action"
+	wget -qO /tmp/yunwifi_str.txt --no-check-certificate $url
 	while [ "$?" != "0" ]
 	do
 		sleep 5
@@ -22,7 +22,7 @@ set_yunwifi_str() {
 	local str=$(cat /tmp/yunwifi_str.txt)
 	yunwifi_str=$(cat /tmp/yunwifi_str.txt)
 	local mac=$(hdwifi_get_mac)
-	url="http://${domain}/yunwifi/wifi/confirmyunwifistr.action?gw_id=${str}&mac=${mac}&aptype="
+	url="https://${domain}/yunwifi/wifi/confirmyunwifistr.action?gw_id=${str}&mac=${mac}&aptype="
 	url=${url}$(hdwifi_get_board)
 	hdwifi_set_str $yunwifi_str
 	[ "$?" = "0" ] && {
@@ -30,7 +30,7 @@ set_yunwifi_str() {
 		while [ "$?" != "0" ]
 		do
 			sleep 5
-			wget -qO /dev/null $url
+			wget -qO /dev/null --no-check-certificate $url
 		done
 	}
 	rm /tmp/lock/yunwifi_str.lck
@@ -51,9 +51,9 @@ get_conf(){
         }
 		get_yunwifi_str
         uri="/yunwifi/wifi/getconf.action"
-        host="http://${1}"
+        host="https://${1}"
         url="${host}${uri}?aptype=${board}&gw_id=${yunwifi_str}&currentversion=${DISTRIB_VERSION}"
-        wget -qO /tmp/wifidog.conf $url
+        wget -qO /tmp/wifidog.conf --no-check-certificate $url
         while [ "$?" != "0" ]
 		do
             sleep 5

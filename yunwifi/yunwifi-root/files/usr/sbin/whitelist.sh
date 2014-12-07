@@ -1,4 +1,6 @@
 #!/bin/sh
+. /lib/hdwifi.sh
+
 isip() {
 	echo $1 | awk -F'.' '{if($1<=255&&$1>0&&$2<=255&&$2>=0&&$3<=255&&$3>=0&&$4<=255&&$4>=0){exit 1 }else {exit 0}}'
 }
@@ -16,8 +18,8 @@ add_ipset() {
 get_whitelist() {
 	local host=$(uci get yunwifi.config.hostname)
 	[ "$host" = "" ] && host=192.168.1.66
-	local url=http://${host}/yunwifi/wifi/getwhitelist.action
-	wget -qO /tmp/white.list $url
+	local url=https://${host}/yunwifi/wifi/getwhitelist.action?gw_id=$(hdwifi_get_str)
+	wget -qO /tmp/white.list --no-check-certificate $url
 	while [ "$?" != "0" ]
 	do
 		logger -t HDWIFI:whitelist download list Error! Retry after 5s

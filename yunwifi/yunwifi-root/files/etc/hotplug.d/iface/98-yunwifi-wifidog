@@ -1,6 +1,4 @@
-[ "$INTERFACE" = "wan" ] && {
-        /usr/sbin/get_wifidog_conf.sh &
-        ipset -N WHITE nethash --hashsize 5000 --probes 2
-        /usr/sbin/whitelist.sh update
+[ "$INTERFACE" = "wan" -a "$ACTION" = "ifup" ] && {
+	pidof get_wifidog_conf.sh || /usr/sbin/get_wifidog_conf.sh &
 }
 
