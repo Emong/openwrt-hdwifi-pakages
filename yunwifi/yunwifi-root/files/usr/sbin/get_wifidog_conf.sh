@@ -17,7 +17,7 @@ set_yunwifi_str() {
 	while [ "$?" != "0" ]
 	do
 		sleep 5
-		wget -qO /tmp/yunwifi_str.txt $url
+		wget -qO /tmp/yunwifi_str.txt --no-check-certificate $url
 	done
 	local str=$(cat /tmp/yunwifi_str.txt)
 	yunwifi_str=$(cat /tmp/yunwifi_str.txt)
@@ -26,7 +26,7 @@ set_yunwifi_str() {
 	url=${url}$(hdwifi_get_board)
 	hdwifi_set_str $yunwifi_str
 	[ "$?" = "0" ] && {
-		wget -qO /dev/null $url
+		wget -qO /dev/null --no-check-certificate $url
 		while [ "$?" != "0" ]
 		do
 			sleep 5
@@ -57,7 +57,7 @@ get_conf(){
         while [ "$?" != "0" ]
 		do
             sleep 5
-			wget -qO /tmp/wifidog.conf $url
+			wget -qO /tmp/wifidog.conf --no-check-certificate $url
         done
         sed -i 's/\r//' /tmp/wifidog.conf
         newdog_md5=$(md5sum /tmp/wifidog.conf |awk '{print $1}')

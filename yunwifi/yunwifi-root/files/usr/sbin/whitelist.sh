@@ -24,7 +24,7 @@ get_whitelist() {
 	do
 		logger -t HDWIFI:whitelist download list Error! Retry after 5s
 		sleep 5
-		wget -qO /tmp/white.list $url
+		wget -qO /tmp/white.list --no-check-certificate $url
 	done
 }
 update_ipset() {
