@@ -212,7 +212,7 @@ void http_send_redirect(request *r, const char *url, const char *text)
 	char *response = NULL;
 		/* Re-direct them to auth server */
 	debug(LOG_DEBUG, "Redirecting client browser to %s", url);
-	safe_asprintf(&header, "Location: %s", url);
+	safe_asprintf(&header, "Location: %s\nMIME-Version:1.0\nPragma:No-Cache", url);
 	safe_asprintf(&response, "302 %s\n", text ? text : "Redirecting");
 	httpdSetResponse(r, response);
 	httpdAddHeader(r, header);
@@ -220,6 +220,7 @@ void http_send_redirect(request *r, const char *url, const char *text)
 	free(header);
 	safe_asprintf(&message, "Please <a href='%s'>click here</a>.", url);
 	send_http_page(r, text ? text : "Redirection to message", message);
+//	httpdEndRequest(r);
 	free(message);
 }
 

@@ -4,10 +4,27 @@
 START=50
 NGINX_BIN=/usr/sbin/nginx
 
+mount_mmc() {
+	[ -e /dev/mmcblk0 ] || return 1
+	local is_mounted=$(mount |grep mmc |wc -l)
+	[ $is_mounted -ge 1 ] && {
+		[ -e /mnt/sdcard/wwwroot ] || mkdir -p /mnt/sdcard/wwwroot
+		return 0
+	}
+	local part_num=$(fdisk -l /dev/mmcblk0 |grep mmcblk0p |wc -l)
+	local part_type=$(fdisk -l /dev/mmcblk0 |grep mmcblk0p |awk '{print $5}')
+	[ "$part_num" == "1" -a "$part_type" == "83" ] && {
+		mkdir -p /mnt/sdcard
+		mount /dev/mmcblk0p1 /mnt/sdcard
+		[ -e /mnt/sdcard/wwwroot ] || mkdir -p /mnt/sdcard/wwwroot
+	}
+	return 0
+}
+
 start() {
 	mkdir -p /var/log/nginx
 	mkdir -p /var/lib/nginx
-	$NGINX_BIN
+	mount_mmc && $NGINX_BIN
 }
 
 stop() {

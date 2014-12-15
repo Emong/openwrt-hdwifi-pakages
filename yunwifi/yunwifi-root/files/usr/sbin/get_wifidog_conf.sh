@@ -44,7 +44,7 @@ get_yunwifi_str() {
 	}
 }
 
-get_conf(){
+get_conf_remote(){
         [ "$1" = "" ] && {
                 echo "not give host!"
                 exit 1
@@ -77,6 +77,30 @@ get_conf(){
         [ "$?" != "0" ] && wifidog
 
         exit 0
+}
+get_conf_local() {
+	local down_bw=$(uci get yunwifi.config.download_bw || echo 10240)
+	local up_bw=$(uci get yunwifi.config.up_bw || echo 10240)
+	local lan_ip=$(uci get network.lan.ipaddr || echo 192.168.253.1)
+	local gw_id=$(hdwifi_get_str)
+
+	sed -e "s#|gw_id|#$gw_id#g" \
+		-e "s#|lan_ip|#$lan_ip#g" \
+		-e "s#|up_bw|#$up_bw#g" \
+		-e "s#|down_bw|#$down_bw#g" \
+		/etc/wifidog.conf.template >/etc/wifidog.conf
+
+	wdctl restart || wifidog
+	exit 0
+}
+get_conf() {
+	local internet_access=$(uci get yunwifi.config.internet_access || echo 1)
+	if [ "$internet_access" == "1" ]
+	then
+		get_conf_remote $@
+	else
+		get_conf_local
+	fi
 }
 if [ "$1" != "" ]
 then

@@ -62,6 +62,11 @@ config NGINX_HTTP_SSI
 	prompt "Enable HTTP ssi module"
 	default y
 
+config NGINX_HTTP_SUB
+	bool
+	prompt "Enable HTTP sub module"
+	default y
+
 config NGINX_HTTP_USERID
 	bool
 	prompt "Enable HTTP userid module"

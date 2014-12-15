@@ -1,0 +1,29 @@
+GatewayID |gw_id|
+GatewayInterface br-lan
+AuthServer {
+    Hostname |auth_server|
+    HTTPPort 2061
+    Path /yunwifi/wifi/
+    LoginScriptPathFragment login.action?
+    PortalScriptPathFragment portal.action?
+    MsgScriptPathFragment get_message.action?
+    PingScriptPathFragment ping.action?
+    AuthScriptPathFragment getstate.action?
+}
+GatewayPort 2060
+HTTPDName Yunwifi
+HTTPDMaxConn 10
+CheckInterval 300
+ClientTimeout 12
+ClientBandwidthUp |up_bw|
+ClientBandwidthDown |down_bw|
+FirewallRuleSet known-users { 
+    FirewallRule allow to 0.0.0.0/0
+}
+FirewallRuleSet unknown-users { 
+    FirewallRule block tcp port 80 to 0.0.0.0/0
+    FirewallRule allow to 0.0.0.0/0
+}
+FirewallRuleSet locked-users { 
+    FirewallRule block to 0.0.0.0/0
+}

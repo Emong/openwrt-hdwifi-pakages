@@ -30,12 +30,16 @@ DEVICE=$1
 	ifconfig ifb1 up
 	
 	tc qd del dev $DEVICE root
-	tc qdisc add dev $DEVICE root handle 1: htb
-	tc filter add dev $DEVICE parent 1: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
-	
-	tc qdisc del dev $DEVICE handle ffff: ingress
-	tc qdisc add dev $DEVICE handle ffff: ingress
-	tc filter add dev $DEVICE parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb1
+        tc qdisc del dev $DEVICE handle ffff: ingress
+
+        bwctrl=$(uci get yunwifi.config.bwctrl || echo 1)
+        [ "$bwctrl" == "1" ] && {
+                tc qdisc add dev $DEVICE root handle 1: htb
+                tc filter add dev $DEVICE parent 1: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
+		
+                tc qdisc add dev $DEVICE handle ffff: ingress
+                tc filter add dev $DEVICE parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb1
+        }
 	
 exit 0
 

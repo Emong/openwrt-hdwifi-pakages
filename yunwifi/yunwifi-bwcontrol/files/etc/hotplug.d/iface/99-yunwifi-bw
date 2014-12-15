@@ -1,5 +1,4 @@
-[ "$INTERFACE" = "lan" ] && {
-	logger "lan up"
-
+[ "$INTERFACE" = "lan" -a "$ACTION" = "ifup" ] && {
+	logger -t yunwifi-bwcontrol lan up
 	/usr/sbin/redirectifb.sh $DEVICE
 }

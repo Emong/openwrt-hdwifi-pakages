@@ -115,6 +115,9 @@ endif
 ifneq ($(CONFIG_NGINX_HTTP_SSI),y)
   ADDITIONAL_MODULES += --without-http_ssi_module
 endif
+ifeq ($(CONFIG_NGINX_HTTP_SUB),y)
+  ADDITIONAL_MODULES += --with-http_sub_module
+endif
 ifneq ($(CONFIG_NGINX_HTTP_USERID),y)
   ADDITIONAL_MODULES += --without-http_userid_module
 endif
@@ -208,6 +211,7 @@ define Package/nginx/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/nginx
 	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
+	$(INSTALL_BIN) ./files/nginx.conf $(1)/etc/nginx/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
 endef
