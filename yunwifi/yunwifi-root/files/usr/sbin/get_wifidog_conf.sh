@@ -85,7 +85,7 @@ get_conf_local() {
 	local gw_id=$(hdwifi_get_str)
 
 	sed -e "s#|gw_id|#$gw_id#g" \
-		-e "s#|lan_ip|#$lan_ip#g" \
+		-e "s#|auth_server|#$lan_ip#g" \
 		-e "s#|up_bw|#$up_bw#g" \
 		-e "s#|down_bw|#$down_bw#g" \
 		/etc/wifidog.conf.template >/etc/wifidog.conf

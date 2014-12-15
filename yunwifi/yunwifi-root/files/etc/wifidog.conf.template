@@ -4,11 +4,11 @@ AuthServer {
     Hostname |auth_server|
     HTTPPort 2061
     Path /yunwifi/wifi/
-    LoginScriptPathFragment login.action?
-    PortalScriptPathFragment portal.action?
-    MsgScriptPathFragment get_message.action?
-    PingScriptPathFragment ping.action?
-    AuthScriptPathFragment getstate.action?
+    LoginScriptPathFragment login.html?
+    PortalScriptPathFragment portal.html?
+    MsgScriptPathFragment get_message.html?
+    PingScriptPathFragment ping.html?
+    AuthScriptPathFragment getstate.html?
 }
 GatewayPort 2060
 HTTPDName Yunwifi

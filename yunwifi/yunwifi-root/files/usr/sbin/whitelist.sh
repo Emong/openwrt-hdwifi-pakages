@@ -16,6 +16,11 @@ add_ipset() {
 
 }
 get_whitelist() {
+	local internet_access=$(uci get yunwifi.config.internet_access || echo 1)
+	[ "$internet_access" == "0" ] && {
+		echo 1.2.3.4 >/tmp/white.list
+		return  0
+	}
 	local host=$(uci get yunwifi.config.hostname)
 	[ "$host" = "" ] && host=192.168.1.66
 	local url=https://${host}/yunwifi/wifi/getwhitelist.action?gw_id=$(hdwifi_get_str)
@@ -26,6 +31,7 @@ get_whitelist() {
 		sleep 5
 		wget -qO /tmp/white.list --no-check-certificate $url
 	done
+	return 0
 }
 update_ipset() {
 	logger "update is depressed"

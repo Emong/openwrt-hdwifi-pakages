@@ -3,6 +3,9 @@ DISK=/dev/mmcblk0
 [ -e $DISK ] || exit 1
 PART_FILE=/tmp/mmcpart
 fdisk -l /dev/mmcblk0 |grep mmcblk0p |awk '{print "d";print substr($1,14,1)}' >$PART_FILE
+/etc/init.d/nginx stop
+sleep 1
+umount /dev//mmcblk0p1
 fdisk $DISK << EOF
 `cat $PART_FILE`
 n

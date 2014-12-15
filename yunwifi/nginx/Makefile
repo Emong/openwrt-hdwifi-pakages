@@ -75,7 +75,7 @@ endef
 config_files=nginx.conf mime.types fastcgi_params koi-utf koi-win win-utf
 
 define Package/nginx/conffiles
-/etc/nginx/
+#/etc/nginx/
 endef
 
 ADDITIONAL_MODULES:=
@@ -211,7 +211,7 @@ define Package/nginx/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/nginx
 	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
-	$(INSTALL_BIN) ./files/nginx.conf $(1)/etc/nginx/
+	$(INSTALL_DATA) ./files/nginx.conf $(1)/etc/nginx/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
 endef
