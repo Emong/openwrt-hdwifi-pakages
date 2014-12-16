@@ -90,6 +90,7 @@ get_conf_local() {
 		-e "s#|down_bw|#$down_bw#g" \
 		/etc/wifidog.conf.template >/etc/wifidog.conf
 
+	ip ro |grep default || ip ro add default dev lo metric 1024
 	wdctl restart || wifidog
 	exit 0
 }

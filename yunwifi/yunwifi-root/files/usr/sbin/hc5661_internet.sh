@@ -1,7 +1,7 @@
 #!/bin/sh
 local internet_led=internet
 internet_up() {
-	local wan_if=$(ip ro |grep default |awk -F 'dev' '{print $2}' |awk '{print $1}')
+	local wan_if=$(ip ro |grep default |grep -v metric|awk -F 'dev' '{print $2}' |awk '{print $1}')
 	[ "$wan_if" = "" ]&& wan_if=eth2.2
 	echo netdev >/sys/class/leds/${internet_led}/trigger
 	echo $wan_if > /sys/class/leds/${internet_led}/device_name
