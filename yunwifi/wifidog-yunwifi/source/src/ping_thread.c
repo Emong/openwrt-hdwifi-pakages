@@ -274,9 +274,7 @@ static void update_counters(void)
 		}
 	}
 	request_size = MAX_BUF;
-	content_size = 170 * client_size;
-	if(content_size < MAX_BUF)
-		content_size = MAX_BUF;
+	content_size = 170 * client_size + 50;
 	debug(LOG_DEBUG, "malloc request and content %d %d bytes",request_size,content_size);
 	request = (char *)safe_malloc(request_size);
 	content = (char *)safe_malloc(content_size);
@@ -318,7 +316,7 @@ static void update_counters(void)
         config_get_config()->gw_id,
 		VERSION,
 		auth_server->central_server,
-		strlen(content)+100);
+		strlen(content));
 
 	sockfd = connect_central_server();
 	if (sockfd == -1) {
