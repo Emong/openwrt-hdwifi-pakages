@@ -247,8 +247,10 @@ static void update_counters(void)
 	int client_size;
 	int			sockfd, nfds, done;
 	int request_size;
+	int content_size;
 	int len;
 	char			*request;
+	char 			*content;
 	fd_set			readfds;
 	struct timeval		timeout;
 	t_auth_serv	*auth_server = NULL;
@@ -271,33 +273,25 @@ static void update_counters(void)
 			client_size++;
 		}
 	}
-	request_size = 170*client_size + 1024;
-	if(request_size < MAX_BUF)
-		request_size = MAX_BUF;
-	debug(LOG_DEBUG, "malloc %d bytes",request_size);
+	request_size = MAX_BUF;
+	content_size = 170 * client_size;
+	if(content_size < MAX_BUF)
+		content_size = MAX_BUF;
+	debug(LOG_DEBUG, "malloc request and content %d %d bytes",request_size,content_size);
 	request = (char *)safe_malloc(request_size);
+	content = (char *)safe_malloc(content_size);
+	debug(LOG_DEBUG, "malloc done");
+
 	/*
 	 * Prep & send request
 	 */
-	debug(LOG_DEBUG, "malloc done");
-	snprintf(request, request_size - 1,
-		"POST %s%sstage=%s&gw_id=%s HTTP/1.0\r\n"
-		"User-Agent: WiFiDog %s\r\n"
-		"Host: %s\r\n"
-		"\r\n"
-		"clientsjson={\"clientlist\":[",
-		auth_server->authserv_path,
-		auth_server->authserv_auth_script_path_fragment,
-		REQUEST_TYPE_COUNTERS,
-        config_get_config()->gw_id,
-		VERSION,
-		auth_server->central_server);
+	snprintf(content, content_size - 1, "clientsjson={\"clientlist\":[");
 	first = client_get_first_client();
 	debug(LOG_DEBUG, "find first[%d]!",first);
 	while (first != NULL) {
-		len = strlen(request);
+		len = strlen(content);
 		debug(LOG_DEBUG, "node[%d]->token:%s!",first,first->token);
-		snprintf(request + len,request_size - len - 1,
+		snprintf(content + len,content_size - len - 1,
 			"{\"token\":\"%s\",\"mac\":\"%s\",\"ip\":\"%s\",\"up\":\"%llu\",\"down\":\"%llu\",\"logintime\":\"%lu\"},",
 			first->token,
 			first->mac,
@@ -307,24 +301,40 @@ static void update_counters(void)
 			first->login_time);
 		first = first->next;
 	}
-	len = strlen(request);
-	snprintf(request + len - 1,request_size - len,
-		"]}");
 	UNLOCK_CLIENT_LIST();
+	len = strlen(content);
+	snprintf(content + len - 1,content_size - len,"]}");
 
+	snprintf(request, request_size - 1,
+		"POST %s%sstage=%s&gw_id=%s HTTP/1.0\r\n"
+		"User-Agent: WiFiDog %s\r\n"
+		"Host: %s\r\n"
+		"Content-type: application/x-www-form-urlencoded\r\n"
+		"Content-Length: %d\r\n"
+		"\r\n",
+		auth_server->authserv_path,
+		auth_server->authserv_auth_script_path_fragment,
+		REQUEST_TYPE_COUNTERS,
+        config_get_config()->gw_id,
+		VERSION,
+		auth_server->central_server,
+		strlen(content)+100);
 
 	sockfd = connect_central_server();
 	if (sockfd == -1) {
 		/*
 		 * No servers for me to talk to
 		 */
+		free(content);
 		free(request);
 		return;
 	}
 
-	debug(LOG_DEBUG, "HTTP Request to Server: [%s]", request);
+	debug(LOG_DEBUG, "HTTP Request to Server: [%s%s]", request, content);
 	
 	send(sockfd, request, strlen(request), 0);
+	send(sockfd, content, strlen(content), 0);
+	free(content);
 
 	debug(LOG_DEBUG, "Reading response");
 	
