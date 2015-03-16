@@ -3,7 +3,7 @@
 local board=$(hdwifi_get_board)
 START=15
 start(){
-    [ "$board" == "hc5661" ] && /usr/sbin/set_auth_interface.sh
+    /usr/sbin/set_auth_interface.sh
     #The following lines is to adapt sys to version 19
 	[ $(cat /etc/crontabs/root  |wc -l) -gt 1 ] && rm /etc/crontabs/root
 	[ "$(uci get yunwifi.config.hostname)" != "wifi.myhdit.com" ] && {

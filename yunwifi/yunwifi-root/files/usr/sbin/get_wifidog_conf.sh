@@ -45,6 +45,7 @@ get_yunwifi_str() {
 }
 
 get_conf_remote(){
+	# get_conf_remote  $host $only_download
         [ "$1" = "" ] && {
                 echo "not give host!"
                 exit 1
@@ -60,6 +61,7 @@ get_conf_remote(){
 			wget -qO /tmp/wifidog.conf --no-check-certificate $url
         done
         sed -i 's/\r//' /tmp/wifidog.conf
+        [ "$2" == 1 ] && return 0
         newdog_md5=$(md5sum /tmp/wifidog.conf |awk '{print $1}')
         olddog_md5=$(md5sum /etc/wifidog.conf |awk '{print $1}')
 		is_wifidog_conf=$(cat /tmp/wifidog.conf |grep GatewayID)
@@ -76,11 +78,13 @@ get_conf_remote(){
         wdctl restart
         [ "$?" != "0" ] && wifidog
 
-        exit 0
+        return 0
 }
 get_conf_local() {
 	local down_bw=$(uci get yunwifi.config.download_bw || echo 10240)
 	local up_bw=$(uci get yunwifi.config.up_bw || echo 10240)
+	cat /tmp/wifidog.conf |grep -q ClientBandwidthDown && down_bw=$(cat /tmp/wifidog.conf |grep ClientBandwidthDown |awk '{print $2}')
+	cat /tmp/wifidog.conf |grep -q ClientBandwidthUp && up_bw=$(cat /tmp/wifidog.conf |grep ClientBandwidthUp |awk '{print $2}')
 	local lan_ip=$(uci get network.lan.ipaddr || echo 192.168.253.1)
 	local gw_id=$(hdwifi_get_str)
 
@@ -88,19 +92,44 @@ get_conf_local() {
 		-e "s#|auth_server|#$lan_ip#g" \
 		-e "s#|up_bw|#$up_bw#g" \
 		-e "s#|down_bw|#$down_bw#g" \
+		-e "s#|central_server|#$domain#g" \
 		/etc/wifidog.conf.template >/etc/wifidog.conf
 
 	ip ro |grep default || ip ro add default dev lo metric 1024
 	wdctl restart || wifidog
-	exit 0
+	return 0
+}
+get_pages() {
+	local gw_id=$(hdwifi_get_str)
+	local url="https://${domain}/yunwifi/wifi/getlocalloginzip.action?gw_id=${gw_id}"
+	local JSON
+	JSON=$(wget --no-check-certificate -qO - $url)
+	while [ "$?" != "0" ]
+	do
+		sleep 5
+		JSON=$(wget --no-check-certificate -qO - $url)
+	done
+	eval $(jshn -r $JSON)
+	[ "$JSON_VAR_url" == "" ] && JSON_VAR_url="http://wifi.myhdit.com/yunwifi/jsp/localLoginUrl/408/yunwifi/wifi.zip"
+	wget --no-check-certificate -O /tmp/pages.zip $JSON_VAR_url
+	while [ "$?" != "0" ]
+	do
+		sleep 5
+		wget --no-check-certificate -O /tmp/pages.zip $JSON_VAR_url
+	done
+	unzip -d /tmp/wwwroot/ /tmp/pages.zip
 }
 get_conf() {
-	local internet_access=$(uci get yunwifi.config.internet_access || echo 1)
-	if [ "$internet_access" == "1" ]
+	local local_wifi=$(uci get yunwifi.config.local_wifi || echo 0)
+	if [ "$local_wifi" == "0" ]
 	then
 		get_conf_remote $@
 	else
+		rm -fr /tmp/pages /tmp/wwwroot/*
+		get_conf_remote $1 1
 		get_conf_local
+		rm -fr /tmp/wifidog.conf
+		get_pages
 	fi
 }
 if [ "$1" != "" ]

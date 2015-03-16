@@ -24,7 +24,10 @@ mount_mmc() {
 start() {
 	mkdir -p /var/log/nginx
 	mkdir -p /var/lib/nginx
-	mount_mmc && $NGINX_BIN
+	mkdir -p /tmp/wwwroot
+	mount_mmc && ln -s /mnt/sdcard/wwwroot /tmp/wwwroot
+	[ ! -e /tmp/wwwroot ] && mkdir -p /tmp/wwwroot
+	$NGINX_BIN
 }
 
 stop() {

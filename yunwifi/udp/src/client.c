@@ -23,6 +23,7 @@ static const char *cmd[] = {
     "autoupgrade.sh",
     "whitelist.sh",
     "do_remote_sh.sh",
+    "refresh_local_wifi.sh",
     "NULL"
 };
 struct send_pak {

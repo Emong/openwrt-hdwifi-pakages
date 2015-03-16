@@ -46,7 +46,7 @@ check_wan() {
 
 board=$(ralink_board_name)
 
-if [ "${board}" == "hc5661" ]; then
+if [ "${board}" == "hc5661" -o "${board}" == "r6830" ]; then
 	while [ 1 -eq 1 ]
 	do
 		    check_wan

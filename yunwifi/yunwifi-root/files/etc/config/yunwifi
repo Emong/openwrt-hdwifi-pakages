@@ -2,4 +2,7 @@ config yunwifi config
 	option hostname 'wifi.myhdit.com'
 	option authtype '1'
 	option dmz_mask '0001'
+	option local_wifi '0'
+	option bwctrl '1'
+	option no_internet '0'
 	

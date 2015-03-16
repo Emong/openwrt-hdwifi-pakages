@@ -4,7 +4,7 @@ local board=$(hdwifi_get_board)
 
 START=99
 start(){
-    [ "$board" == "hc5661" ] && {
+    [ "${board}" == "hc5661" -o "${board}" == "r6830" ] && {
     	/usr/sbin/hc5661_internet.sh &
     }
 }
