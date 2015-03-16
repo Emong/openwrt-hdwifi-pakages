@@ -278,6 +278,7 @@ int connect_central_server() {
 /* Helper function called by connect_auth_server() to do the actual work including recursion
  * DO NOT CALL DIRECTLY
  @param level recursion level indicator must be 0 when not called by _connect_auth_server()
+ @param type connect type authserver or centralserver
  */
 int _connect_auth_server(int level,int type) {
 	s_config *config = config_get_config();

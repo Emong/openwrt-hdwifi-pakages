@@ -547,7 +547,7 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 	switch(type) {
 		case FW_ACCESS_ALLOW:
 //iptables -t mangle -nL WiFiDog_br-lan_Outgoing  |grep 192.168.0.1401
-			rc = iptables_do_command("-t mangle -nL " TABLE_WIFIDOG_OUTGOING " |grep %s",ip);
+			rc = iptables_do_command("-t mangle -nL " TABLE_WIFIDOG_OUTGOING " |awk '{print $4}' |grep %s$",ip);
 			if(rc != 0)	//not has such rule
 			{
 				iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -j MARK --set-mark %d", ip, tag);
