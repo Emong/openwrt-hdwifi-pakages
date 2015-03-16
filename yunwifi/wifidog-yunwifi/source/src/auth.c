@@ -100,6 +100,7 @@ authenticate_client(request *r)
 	char *urlFragment = NULL;
 	s_config	*config = NULL;
 	t_auth_serv	*auth_server = NULL;
+	httpVar *click_ad = httpdGetVariableByName(r, "click_ad");
 
 	LOCK_CLIENT_LIST();
 
@@ -185,10 +186,20 @@ authenticate_client(request *r)
 		client->fw_connection_state = FW_MARK_KNOWN;
 		fw_allow(client->ip, client->mac, FW_MARK_KNOWN);
         served_this_session++;
-		safe_asprintf(&urlFragment, "%sgw_id=%s",
-			auth_server->authserv_portal_script_path_fragment,
-			config->gw_id
-		);
+        if(click_ad != NULL)
+        {
+        	safe_asprintf(&urlFragment,"%sgw_id=%s&click_ad=%s",
+        		auth_server->authserv_portal_script_path_fragment,
+        		config->gw_id,
+        		click_ad->value);
+        }
+        else 
+        {
+			safe_asprintf(&urlFragment, "%sgw_id=%s",
+				auth_server->authserv_portal_script_path_fragment,
+				config->gw_id
+			);
+		}
 		http_send_redirect_to_auth(r, urlFragment, "Redirect to portal");
 		free(urlFragment);
 	    break;
