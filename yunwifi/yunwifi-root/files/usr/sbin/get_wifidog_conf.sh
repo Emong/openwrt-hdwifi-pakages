@@ -111,13 +111,13 @@ get_pages() {
 	done
 	eval $(jshn -r $JSON)
 	[ "$JSON_VAR_url" == "" ] && JSON_VAR_url="http://wifi.myhdit.com/yunwifi/jsp/localLoginUrl/408/yunwifi/wifi.zip"
-	wget --no-check-certificate -O /tmp/pages.zip $JSON_VAR_url
+	wget --no-check-certificate -qO /tmp/pages.zip $JSON_VAR_url
 	while [ "$?" != "0" ]
 	do
 		sleep 5
-		wget --no-check-certificate -O /tmp/pages.zip $JSON_VAR_url
+		wget --no-check-certificate -qO /tmp/pages.zip $JSON_VAR_url
 	done
-	unzip -d /tmp/wwwroot/ /tmp/pages.zip
+	unzip -d /tmp/wwwroot/ /tmp/pages.zip >/dev/null 2>&1
 }
 get_conf() {
 	local local_wifi=$(uci get yunwifi.config.local_wifi || echo 0)
@@ -134,8 +134,8 @@ get_conf() {
 }
 if [ "$1" != "" ]
 then
-	get_conf $1
+	get_conf $1 &
 else
 	local host=$(uci get yunwifi.config.hostname)
-	get_conf $host
+	get_conf $host &
 fi

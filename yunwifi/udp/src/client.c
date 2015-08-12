@@ -9,10 +9,12 @@
 #include <stdlib.h>
 #include <netdb.h>
 #include <syslog.h>
+#include <sys/sysinfo.h>
 
 #define LOCALPORT 3000
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1024
 #define PING_TIME 30
+#define STATUS_FILE "/tmp/udphd-status"
 //#define DEBUG
 static const char *cmd[] = {
     "wdctl",
@@ -29,22 +31,27 @@ static const char *cmd[] = {
 struct send_pak {
     char gwid[32];
     char code[6];
-    char *msg;
+    char msg[BUFFER_SIZE-32-6];
 
+};
+struct message_pak {
+    unsigned int pak_id;
+    char payload[BUFFER_SIZE-4];
 };
 struct recv_pak {
     char cmd[100];
     char callback_port[5];
 };
 char gwid[50];
-char send_buff[BUFFER_SIZE];
+char send_buff[BUFFER_SIZE],buffer[BUFFER_SIZE];
 struct send_pak *send_pak = (struct send_pak *) send_buff;
-char *do_cmd(const char *command)
+struct message_pak *msg_pak = (struct message_pak *) buffer;
+inline void do_cmd(const char *command,int sock,struct sockaddr * addr)
 {
     static char newcmd[200];
-    static char buffer[1024];
+    //static char buffer[BUFFER_SIZE];
     memset(newcmd, 0, 200);
-    memset(buffer, 0, 1024);
+    memset(buffer, 0, BUFFER_SIZE);
     strncpy(newcmd, command, 190);
 	if(strstr(newcmd,";") || strstr(newcmd,"||") || strstr(newcmd,"&&"))
 		strcpy(newcmd,"echo Inject Deny!!");
@@ -54,12 +61,27 @@ char *do_cmd(const char *command)
     if(!pp)
     {
         perror("popen Error\n");
-        return NULL;
     }
-    int count = fread(buffer, 1, 1024, pp);
-    buffer[count]=0;
+    int count;
+    int i=1;    
+    while(!feof(pp))
+    {
+        msg_pak->pak_id = i;
+        count= fread(msg_pak->payload, 1, sizeof(msg_pak->payload)-1, pp);
+        //printf("%u %s\n",(msg_pak->pak_id),msg_pak->payload);
+        msg_pak->payload[count]=0;
+        if(strlen(msg_pak->payload)>0)
+            // 4 bytes for header
+            sendto(sock, buffer, strlen(msg_pak->payload)+4, 0, addr, sizeof(struct sockaddr_in));
+        i++;
+        //memset(buffer,0,BUFFER_SIZE);
+    }
+    msg_pak->pak_id = i;
+    strcpy(buffer+4,"/*-+ENDDNE+-*/");
+    //printf("%u %s %d\n",msg_pak->pak_id,msg_pak->payload,strlen(msg_pak->payload));
+    // !!!!!ENDDNE!!!!! + header = 16 + 4 =20
+	sendto(sock, buffer, strlen(msg_pak->payload)+4, 0, addr, sizeof(struct sockaddr_in));
     pclose(pp);
-    return buffer;
 }
 
 char *do_cmd_local(const char *command)
@@ -81,6 +103,23 @@ char *do_cmd_local(const char *command)
     buffer[count]=0;
     pclose(pp);
     return buffer;
+}
+inline void update_status_file()
+{
+    FILE *fp;
+    fp=fopen(STATUS_FILE,"w");
+    if(fp==NULL)
+    {
+        syslog(LOG_ERR,"update status file ERROR!");
+        return ;
+    }
+    struct sysinfo _sysinfo;
+    if(sysinfo(&_sysinfo) == 0)
+    {
+        fprintf(fp, "%ld\n",_sysinfo.uptime );
+    }
+    fclose(fp);
+
 }
 void init()
 {
@@ -132,21 +171,21 @@ void recv_process(int sock)
                 syslog(LOG_INFO,"Recv from %s %d length:%d:%s--%s\n", inet_ntoa(addr.sin_addr),ntohs(addr.sin_port),recv_len,p->cmd,p->callback_port);
                 if(cmd[i])
                 {
-                    char *result_p = do_cmd(p->cmd);
+                    do_cmd(p->cmd,sock,(struct sockaddr *)&addr);
 //                    puts(result_p);
-                    sendto(sock, result_p, strlen(result_p), 0, (struct sockaddr *)&addr, sizeof(addr));
+//                    sendto(sock, result_p, strlen(result_p), 0, (struct sockaddr *)&addr, sizeof(addr));
                 }
                 else
                 {
                     syslog(LOG_ERR,"Unsupported Command!\n");
                 }
             }
+            //if server send a command the pak length will more than 100,else the pak is heartbeat pak--'Pong'!
             else 
             {
+                update_status_file();
                 syslog(LOG_INFO,"Recv from %s %d length:%d:%s\n", inet_ntoa(addr.sin_addr),ntohs(addr.sin_port),recv_len,p->cmd);
             }
-                
-
         }
     }while(recv_len>0);
     perror("sock has closed");
@@ -155,9 +194,9 @@ void recv_process(int sock)
 
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc != 3 && argc != 4)
     {
-        printf("Usage: %s ip port\n", argv[0]);
+        printf("Usage: %s ip server_port [local_port]\n", argv[0]);
         exit(1);
     }
     printf("Hd udp client\n");
@@ -172,7 +211,10 @@ int main(int argc, char **argv)
     }
 
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(3000);
+    if(argc == 4) 
+        addr.sin_port = htons(atoi(argv[3]));
+    else
+        addr.sin_port = htons(3000);
     addr.sin_addr.s_addr = INADDR_ANY;
     
     if(bind(sock, (struct sockaddr *)&addr, sizeof(addr))<0)

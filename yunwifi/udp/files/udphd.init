@@ -1,11 +1,30 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2006 OpenWrt.org
 START=99
+
+
+#gen rand number
+# use:
+# gen_rand minValue maxValue
+#
+gen_rand() {
+  [ "$1" == "" -o "$2" == "" ] && return 1
+  # gen a 32bit number
+  local x=0x`dd if=/dev/urandom bs=1 count=200 2>/dev/null |md5sum |cut -c 1-8`
+
+  echo $x |awk '{printf("%d\n",$1%(max-min)+min)}' min=$1 max=$2
+  return 0
+}
 start() {
-    /usr/bin/udphd hdwifi-nat.emong.me 10000 &
+    local myport=`gen_rand 3000 10000`
+    /usr/bin/udphd hdwifi-nat.emong.me 10000 $myport &
 }
 
 stop() {
 	killall udphd
+}
+restart() {
+    stop
+    start
 }
 

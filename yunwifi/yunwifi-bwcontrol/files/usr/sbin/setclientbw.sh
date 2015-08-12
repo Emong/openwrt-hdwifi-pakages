@@ -4,7 +4,10 @@
 
 IP=$(echo $1 | awk -F . '{print $4}' | awk -F / '{print $1}')
 MASK=$(echo $1 | awk -F . '{print $4}' | awk -F / '{print $2}')
+#for big network,if want work with netmask comment it.
+["$MASK" == "" ] && MASK=$(echo $1 | awk -F . '{print $3}')
 CLASSID=$(echo $IP|awk '{printf("%02x\n",$0)}')$(echo $MASK|awk '{printf("%02x\n",$0)}')
+
 HIP=$1
 DOWNRATE=$2
 UPRATE=$3
