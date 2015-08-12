@@ -35,8 +35,8 @@ struct send_pak {
 
 };
 struct message_pak {
-    unsigned int pak_id;
-    char payload[BUFFER_SIZE-4];
+    unsigned char pak_id;
+    char payload[BUFFER_SIZE-1];
 };
 struct recv_pak {
     char cmd[100];
@@ -63,7 +63,7 @@ inline void do_cmd(const char *command,int sock,struct sockaddr * addr)
         perror("popen Error\n");
     }
     int count;
-    int i=1;    
+    unsigned char i=1;    
     while(!feof(pp))
     {
         msg_pak->pak_id = i;
@@ -72,15 +72,16 @@ inline void do_cmd(const char *command,int sock,struct sockaddr * addr)
         msg_pak->payload[count]=0;
         if(strlen(msg_pak->payload)>0)
             // 4 bytes for header
-            sendto(sock, buffer, strlen(msg_pak->payload)+4, 0, addr, sizeof(struct sockaddr_in));
+            sendto(sock, buffer, strlen(msg_pak->payload)+1, 0, addr, sizeof(struct sockaddr_in));
         i++;
         //memset(buffer,0,BUFFER_SIZE);
     }
-    msg_pak->pak_id = i;
-    strcpy(buffer+4,"/*-+ENDDNE+-*/");
+    msg_pak->pak_id = 1;
+    strcpy(msg_pak->payload,"/*-+ENDDNE+-*/");
     //printf("%u %s %d\n",msg_pak->pak_id,msg_pak->payload,strlen(msg_pak->payload));
+    //puts(buffer);
     // !!!!!ENDDNE!!!!! + header = 16 + 4 =20
-	sendto(sock, buffer, strlen(msg_pak->payload)+4, 0, addr, sizeof(struct sockaddr_in));
+	sendto(sock, buffer, strlen(msg_pak->payload)+1, 0, addr, sizeof(struct sockaddr_in));
     pclose(pp);
 }
 
